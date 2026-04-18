@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { ConfigureSidebarProvider } from '@/components/configure/sidebar-context'
 import { ConfigureSidebar } from '@/components/configure/configure-sidebar'
@@ -6,6 +6,7 @@ import { FlowCanvas, type FlowNodeId } from '@/components/configure/flow-canvas'
 import { useConfigureSidebar } from '@/components/configure/sidebar-context'
 import { SubagentForm } from '@/components/configure/subagent-form'
 import { type SubagentConfig, BEDROCK_MODELS } from '@/components/configure/models'
+import { PresetManager } from '@/components/configure/preset-manager'
 
 export const Route = createFileRoute('/_app/configure')({
   component: ConfigurePage,
@@ -48,10 +49,31 @@ function ConfigureContent() {
     []
   )
 
+  const handleApplyPreset = useCallback((presetConfigs: Record<FlowNodeId, SubagentConfig>) => {
+    setConfigs(presetConfigs)
+    setSelectedNode(null)
+  }, [])
+
+  // Mount PresetManager in sidebar when no node is selected
+  useEffect(() => {
+    if (selectedNode === null) {
+      setPage({
+        id: "presets",
+        title: "Configuration Presets",
+        content: (
+          <PresetManager 
+            currentConfigs={configs}
+            onApplyPreset={handleApplyPreset}
+          />
+        )
+      })
+    }
+  }, [selectedNode, configs, setPage, handleApplyPreset])
+
   function handleNodeClick(nodeId: FlowNodeId) {
     if (selectedNode === nodeId) {
       setSelectedNode(null)
-      clearPage()
+      // We don't call clearPage() anymore, as the useEffect will seamlessly swap in the PresetManager.
       return
     }
 
