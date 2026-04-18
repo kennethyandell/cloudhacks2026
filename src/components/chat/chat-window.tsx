@@ -63,14 +63,14 @@ export function ChatWindow({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background">
+    <div className="flex flex-1 flex-col min-h-0 overflow-hidden bg-background">
       {/* Header */}
-      <div className="flex h-14 items-center border-b border-border/40 px-6">
+      <div className="flex h-14 items-center border-b border-border/40 px-6 shrink-0">
         <h2 className="text-lg font-semibold tracking-tight">Supervisor</h2>
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-6" viewportRef={scrollRef}>
+      <ScrollArea className="flex-1 p-6 min-h-0" viewportRef={scrollRef}>
         <div className="flex flex-col gap-6">
           {messages.length === 0 ? (
             <div className="flex h-full flex-1 flex-col items-center justify-center space-y-4 text-center">
@@ -117,7 +117,7 @@ export function ChatWindow({
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 border-t border-border/40">
+      <div className="p-4 border-t border-border/40 shrink-0">
         <form
           onSubmit={handleSubmit}
           className="mx-auto flex max-w-3xl items-center gap-2 rounded-xl border border-input bg-transparent px-3 py-1.5 focus-within:ring-1 focus-within:ring-ring"

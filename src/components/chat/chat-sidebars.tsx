@@ -33,14 +33,14 @@ export function ChatLeftSidebar({
   ]
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-border/40 bg-muted/20">
-      <div className="flex h-14 items-center justify-between px-4 border-b border-border/40">
+    <aside className="flex w-64 shrink-0 flex-col border-r border-border/40 bg-muted/20 min-h-0">
+      <div className="flex h-14 shrink-0 items-center justify-between px-4 border-b border-border/40">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
         <Button size="icon" variant="ghost" className="size-8 rounded-full" onClick={onNewChat} title="New Chat">
           <PlusIcon className="size-4" />
         </Button>
       </div>
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="flex flex-col gap-1 p-3">
           {previousChats.map((chat) => (
             <Button
@@ -81,8 +81,8 @@ export function ChatRightSidebar({
   thoughts = [],
 }: ChatRightSidebarProps) {
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-l border-border/40 bg-muted/10">
-      <div className="flex h-14 items-center px-4 border-b border-border/40">
+    <aside className="flex w-80 shrink-0 flex-col border-l border-border/40 bg-muted/10 min-h-0">
+      <div className="flex h-14 shrink-0 items-center px-4 border-b border-border/40">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
       </div>
       
@@ -95,13 +95,13 @@ export function ChatRightSidebar({
       </div>
 
       {/* Agents' Thoughts Bottom Section */}
-      <div className="flex h-10 items-center px-4 border-b border-border/40 bg-muted/20">
+      <div className="flex h-10 shrink-0 items-center px-4 border-b border-border/40 bg-muted/20">
         <ActivityIcon className="mr-2 size-4 text-primary" />
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Subagent Thoughts Stream
         </h3>
       </div>
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="flex flex-col gap-4 p-4">
           {thoughts.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center italic mt-4">

@@ -69,7 +69,7 @@ function ChatPage() {
   }
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex flex-1 overflow-hidden min-h-0">
       {/* Left sidebar - Chat History */}
       <ChatLeftSidebar 
         activeChatId={activeChatId}
@@ -78,7 +78,7 @@ function ChatPage() {
       />
 
       {/* Main chat area */}
-      <div className="flex flex-1 flex-col border-r border-border/40 relative">
+      <div className="flex flex-1 flex-col border-r border-border/40 relative min-h-0">
         {/* We key the ChatWindow by activeChatId so it resets its internal state when switching mock chats */}
         <ChatWindow key={activeChatId} onSendMessage={handleSendMessage} />
       </div>
