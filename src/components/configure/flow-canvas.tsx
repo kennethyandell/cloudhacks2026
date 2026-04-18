@@ -8,7 +8,9 @@ type NodeTextLines = string[]
 type FlowCanvasProps = {
   onNodeClick?: (nodeId: FlowNodeId) => void
   selectedNode?: FlowNodeId | null
+  activeNode?: FlowNodeId | null
   nodeTexts?: Partial<Record<FlowNodeId, NodeTextLines>>
+  mini?: boolean
 }
 
 function TextLines({
@@ -57,7 +59,7 @@ function TextLines({
   )
 }
 
-export function FlowCanvas({ onNodeClick, selectedNode, nodeTexts = {} }: FlowCanvasProps) {
+export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = {}, mini = false }: FlowCanvasProps) {
   const [hoveredNode, setHoveredNode] = useState<FlowNodeId | null>(null)
 
   const topLines = nodeTexts["top"] ?? []
@@ -65,10 +67,10 @@ export function FlowCanvas({ onNodeClick, selectedNode, nodeTexts = {} }: FlowCa
   const bottomRightLines = nodeTexts["bottom-right"] ?? []
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8">
+    <div className={cn("flex flex-1 items-center justify-center", mini ? "p-2" : "p-8")}>
       <svg
         viewBox="-20 0 1400 650"
-        className="h-full max-h-[calc(100svh-5rem)] w-full"
+        className={cn("w-full", mini ? "h-auto max-h-48" : "h-full max-h-[calc(100svh-5rem)]")}
         preserveAspectRatio="xMidYMid meet"
       >
         {/* Connection lines */}
@@ -105,85 +107,91 @@ export function FlowCanvas({ onNodeClick, selectedNode, nodeTexts = {} }: FlowCa
 
         {/* Top Node — rectangle with bottom corners clipped */}
         <g
-          className="cursor-pointer"
+          className={cn(onNodeClick && "cursor-pointer")}
           onClick={() => onNodeClick?.("top")}
-          onMouseEnter={() => setHoveredNode("top")}
-          onMouseLeave={() => setHoveredNode(null)}
+          onMouseEnter={() => !mini && setHoveredNode("top")}
+          onMouseLeave={() => !mini && setHoveredNode(null)}
           role="button"
-          tabIndex={0}
+          tabIndex={onNodeClick ? 0 : -1}
           aria-label="Top node"
         >
           <path
             d="M470,40 L830,40 L830,240 L770,300 L530,300 L470,240 Z"
             className={cn(
               "transition-all duration-200",
-              selectedNode === "top"
-                ? "fill-accent stroke-primary stroke-2"
-                : hoveredNode === "top"
-                  ? "fill-accent/80 stroke-muted-foreground/40 stroke-1"
-                  : "fill-muted stroke-transparent"
+              activeNode === "top"
+                ? "fill-accent stroke-primary stroke-2 animate-pulse drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                : selectedNode === "top"
+                  ? "fill-accent stroke-primary stroke-2"
+                  : hoveredNode === "top"
+                    ? "fill-accent/80 stroke-muted-foreground/40 stroke-1"
+                    : "fill-muted stroke-transparent"
             )}
           />
         </g>
 
         {/* Top Node Text — to the right */}
-        {topLines.length > 0 && (
+        {!mini && topLines.length > 0 && (
           <TextLines lines={topLines} x={860} y={60} width={350} />
         )}
 
         {/* Bottom-Left Node — rectangle with top-right corner clipped */}
         <g
-          className="cursor-pointer"
+          className={cn(onNodeClick && "cursor-pointer")}
           onClick={() => onNodeClick?.("bottom-left")}
-          onMouseEnter={() => setHoveredNode("bottom-left")}
-          onMouseLeave={() => setHoveredNode(null)}
+          onMouseEnter={() => !mini && setHoveredNode("bottom-left")}
+          onMouseLeave={() => !mini && setHoveredNode(null)}
           role="button"
-          tabIndex={0}
+          tabIndex={onNodeClick ? 0 : -1}
           aria-label="Bottom-left node"
         >
           <path
             d="M280,370 L510,370 L560,430 L560,610 L280,610 Z"
             className={cn(
               "transition-all duration-200",
-              selectedNode === "bottom-left"
-                ? "fill-accent stroke-primary stroke-2"
-                : hoveredNode === "bottom-left"
-                  ? "fill-accent/80 stroke-muted-foreground/40 stroke-1"
-                  : "fill-muted stroke-transparent"
+              activeNode === "bottom-left"
+                ? "fill-accent stroke-primary stroke-2 animate-pulse drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                : selectedNode === "bottom-left"
+                  ? "fill-accent stroke-primary stroke-2"
+                  : hoveredNode === "bottom-left"
+                    ? "fill-accent/80 stroke-muted-foreground/40 stroke-1"
+                    : "fill-muted stroke-transparent"
             )}
           />
         </g>
 
         {/* Bottom-Left Node Text — to the left */}
-        {bottomLeftLines.length > 0 && (
+        {!mini && bottomLeftLines.length > 0 && (
           <TextLines lines={bottomLeftLines} x={0} y={390} width={250} />
         )}
 
         {/* Bottom-Right Node — rectangle with top-left corner clipped */}
         <g
-          className="cursor-pointer"
+          className={cn(onNodeClick && "cursor-pointer")}
           onClick={() => onNodeClick?.("bottom-right")}
-          onMouseEnter={() => setHoveredNode("bottom-right")}
-          onMouseLeave={() => setHoveredNode(null)}
+          onMouseEnter={() => !mini && setHoveredNode("bottom-right")}
+          onMouseLeave={() => !mini && setHoveredNode(null)}
           role="button"
-          tabIndex={0}
+          tabIndex={onNodeClick ? 0 : -1}
           aria-label="Bottom-right node"
         >
           <path
             d="M740,430 L790,370 L1020,370 L1020,610 L740,610 Z"
             className={cn(
               "transition-all duration-200",
-              selectedNode === "bottom-right"
-                ? "fill-accent stroke-primary stroke-2"
-                : hoveredNode === "bottom-right"
-                  ? "fill-accent/80 stroke-muted-foreground/40 stroke-1"
-                  : "fill-muted stroke-transparent"
+              activeNode === "bottom-right"
+                ? "fill-accent stroke-primary stroke-2 animate-pulse drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                : selectedNode === "bottom-right"
+                  ? "fill-accent stroke-primary stroke-2"
+                  : hoveredNode === "bottom-right"
+                    ? "fill-accent/80 stroke-muted-foreground/40 stroke-1"
+                    : "fill-muted stroke-transparent"
             )}
           />
         </g>
 
         {/* Bottom-Right Node Text — to the right */}
-        {bottomRightLines.length > 0 && (
+        {!mini && bottomRightLines.length > 0 && (
           <TextLines lines={bottomRightLines} x={1050} y={390} width={250} />
         )}
       </svg>
