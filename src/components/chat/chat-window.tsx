@@ -14,15 +14,14 @@ export type Message = {
 }
 
 type ChatWindowProps = {
-  initialMessages?: Message[]
+  messages?: Message[]
   onSendMessage?: (text: string) => void
 }
 
 export function ChatWindow({
-  initialMessages = [],
+  messages = [],
   onSendMessage,
 }: ChatWindowProps) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [inputValue, setInputValue] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -44,22 +43,8 @@ export function ChatWindow({
       timestamp: new Date(),
     }
 
-    setMessages((prev) => [...prev, newMessage])
     onSendMessage?.(inputValue)
     setInputValue("")
-
-    // Mock supervisor response for demo
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: "supervisor",
-          content: "I am coordinating the subagents to process your request.",
-          timestamp: new Date(),
-        },
-      ])
-    }, 1000)
   }
 
   return (

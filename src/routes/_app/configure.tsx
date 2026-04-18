@@ -7,6 +7,8 @@ import { useConfigureSidebar } from '@/components/configure/sidebar-context'
 import { SubagentForm } from '@/components/configure/subagent-form'
 import { type SubagentConfig, BEDROCK_MODELS } from '@/components/configure/models'
 import { PresetManager } from '@/components/configure/preset-manager'
+import { api } from '@/utils/api'
+import { NODE_TO_AGENT } from '@/lib/constants'
 
 export const Route = createFileRoute('/_app/configure')({
   component: ConfigurePage,
@@ -42,12 +44,37 @@ function ConfigureContent() {
 
   const handleSave = useCallback(
     (nodeId: FlowNodeId, config: SubagentConfig) => {
-      setConfigs((prev) => ({ ...prev, [nodeId]: config }))
-      // TODO: Send config to API
-      console.log(`Saved config for ${nodeId}:`, config)
+      setConfigs((prev) => {
+        const next = { ...prev, [nodeId]: config }
+        
+        api.presets.save({
+          userId: "default-user",
+          name: "Current Preset",
+          melchior: { prompt: next["top"].prompt, model: next["top"].modelId },
+          balthasar: { prompt: next["bottom-left"].prompt, model: next["bottom-left"].modelId },
+          casper: { prompt: next["bottom-right"].prompt, model: next["bottom-right"].modelId },
+          supervisor: { prompt: "Default supervisor prompt" }
+        }).catch(err => console.error("Failed to save preset", err))
+
+        return next
+      })
     },
     []
   )
+
+  useEffect(() => {
+    api.presets.list("default-user").then((items: any[]) => {
+      if (items && items.length > 0) {
+        // Find latest preset
+        const latest = items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+        setConfigs({
+          "top": { name: latest.name || "Subagent A", modelId: latest.melchior?.model || BEDROCK_MODELS[0].id, prompt: latest.melchior?.prompt || "" },
+          "bottom-left": { name: latest.name || "Subagent B", modelId: latest.balthasar?.model || BEDROCK_MODELS[0].id, prompt: latest.balthasar?.prompt || "" },
+          "bottom-right": { name: latest.name || "Subagent C", modelId: latest.casper?.model || BEDROCK_MODELS[0].id, prompt: latest.casper?.prompt || "" },
+        })
+      }
+    }).catch(err => console.error("Failed to load presets", err))
+  }, [])
 
   const handleApplyPreset = useCallback((presetConfigs: Record<FlowNodeId, SubagentConfig>) => {
     setConfigs(presetConfigs)

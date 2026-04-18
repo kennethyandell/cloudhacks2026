@@ -1,10 +1,12 @@
-import type { ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { FlowCanvas, type FlowNodeId } from "@/components/configure/flow-canvas"
 import { MessageSquareIcon, ActivityIcon, PlusIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { api } from "@/utils/api"
+import type { Message } from "@/components/chat/chat-window"
 
 type ChatSidebarProps = {
   title?: string
@@ -14,23 +16,33 @@ type ChatSidebarProps = {
 
 type ChatLeftSidebarProps = ChatSidebarProps & {
   activeChatId?: string
-  onSelectChat?: (id: string) => void
+  onSelectChat?: (id: string, messages?: Message[]) => void
   onNewChat?: () => void
 }
 
 export function ChatLeftSidebar({ 
   title = "Previous Chats",
-  activeChatId = "1",
+  activeChatId = "new",
   onSelectChat,
   onNewChat
 }: ChatLeftSidebarProps) {
-  // Mock chat history
-  const previousChats = [
-    { id: "1", title: "API Integration Plan", date: "2 hours ago" },
-    { id: "2", title: "Database Schema Design", date: "Yesterday" },
-    { id: "3", title: "UI Feedback Revisions", date: "Oct 12" },
-    { id: "4", title: "Authentication Setup", date: "Oct 10" },
-  ]
+  const [previousChats, setPreviousChats] = useState<{ id: string, title: string, date: string, messages?: Message[] }[]>([])
+
+  useEffect(() => {
+    api.chats.list("default-user").then((items: any[]) => {
+      const formatted = items.map(item => {
+        const d = new Date(item.createdAt)
+        const dateStr = d.toLocaleDateString()
+        return {
+          id: item.chatID,
+          title: item.title || "Chat",
+          date: dateStr,
+          messages: item.messages || []
+        }
+      })
+      setPreviousChats(formatted)
+    }).catch(err => console.error("Failed to load chats", err))
+  }, [])
 
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-border/40 bg-muted/20 min-h-0">
@@ -47,7 +59,7 @@ export function ChatLeftSidebar({
               key={chat.id}
               variant={activeChatId === chat.id ? "secondary" : "ghost"}
               className="justify-start px-3 py-2 h-auto font-normal text-left"
-              onClick={() => onSelectChat?.(chat.id)}
+              onClick={() => onSelectChat?.(chat.id, chat.messages)}
             >
               <MessageSquareIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
               <div className="flex flex-col gap-0.5 overflow-hidden">
