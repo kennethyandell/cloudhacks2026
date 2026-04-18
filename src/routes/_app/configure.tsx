@@ -54,10 +54,17 @@ function ConfigureContent() {
     })
   }
 
+  const nodeTexts = {
+    "top": ["System Prompt", "Model: GPT-4o", "Temperature: 0.7"],
+    "bottom-left": ["Input Source", "Type: Document"],
+    "bottom-right": ["Output Format", "Type: Markdown"],
+  } as const
+
   return (
     <FlowCanvas
       selectedNode={selectedNode}
       onNodeClick={handleNodeClick}
+      nodeTexts={nodeTexts}
     />
   )
 }
