@@ -30,16 +30,18 @@ function TextLines({
         const lineY = y + i * lineHeight
         return (
           <g key={i}>
-            <text
+            <foreignObject
               x={x}
-              y={lineY}
-              className="fill-foreground"
-              fontSize="14"
-              fontFamily="var(--font-sans)"
-              dominantBaseline="middle"
+              y={lineY - lineHeight / 2}
+              width={width}
+              height={lineHeight}
             >
-              {text}
-            </text>
+              <div className="flex h-full w-full items-center">
+                <span className="w-full truncate text-[14px] text-foreground font-sans">
+                  {text}
+                </span>
+              </div>
+            </foreignObject>
             <line
               x1={x}
               y1={lineY + lineHeight * 0.45}
@@ -65,16 +67,16 @@ export function FlowCanvas({ onNodeClick, selectedNode, nodeTexts = {} }: FlowCa
   return (
     <div className="flex flex-1 items-center justify-center p-8">
       <svg
-        viewBox="0 0 1100 650"
+        viewBox="-20 0 1400 650"
         className="h-full max-h-[calc(100svh-5rem)] w-full"
         preserveAspectRatio="xMidYMid meet"
       >
         {/* Connection lines */}
         {/* Top to Bottom-Left */}
         <line
-          x1="410"
+          x1="560"
           y1="280"
-          x2="310"
+          x2="460"
           y2="370"
           className="stroke-foreground"
           strokeWidth="6"
@@ -82,9 +84,9 @@ export function FlowCanvas({ onNodeClick, selectedNode, nodeTexts = {} }: FlowCa
         />
         {/* Top to Bottom-Right */}
         <line
-          x1="590"
+          x1="740"
           y1="280"
-          x2="690"
+          x2="840"
           y2="370"
           className="stroke-foreground"
           strokeWidth="6"
@@ -92,9 +94,9 @@ export function FlowCanvas({ onNodeClick, selectedNode, nodeTexts = {} }: FlowCa
         />
         {/* Bottom-Left to Bottom-Right */}
         <line
-          x1="400"
+          x1="550"
           y1="490"
-          x2="600"
+          x2="750"
           y2="490"
           className="stroke-foreground"
           strokeWidth="6"
@@ -112,7 +114,7 @@ export function FlowCanvas({ onNodeClick, selectedNode, nodeTexts = {} }: FlowCa
           aria-label="Top node"
         >
           <path
-            d="M320,40 L680,40 L680,240 L620,300 L380,300 L320,240 Z"
+            d="M470,40 L830,40 L830,240 L770,300 L530,300 L470,240 Z"
             className={cn(
               "transition-all duration-200",
               selectedNode === "top"
@@ -126,7 +128,7 @@ export function FlowCanvas({ onNodeClick, selectedNode, nodeTexts = {} }: FlowCa
 
         {/* Top Node Text — to the right */}
         {topLines.length > 0 && (
-          <TextLines lines={topLines} x={710} y={60} width={350} />
+          <TextLines lines={topLines} x={860} y={60} width={350} />
         )}
 
         {/* Bottom-Left Node — rectangle with top-right corner clipped */}
@@ -140,7 +142,7 @@ export function FlowCanvas({ onNodeClick, selectedNode, nodeTexts = {} }: FlowCa
           aria-label="Bottom-left node"
         >
           <path
-            d="M130,370 L360,370 L410,430 L410,610 L130,610 Z"
+            d="M280,370 L510,370 L560,430 L560,610 L280,610 Z"
             className={cn(
               "transition-all duration-200",
               selectedNode === "bottom-left"
@@ -154,7 +156,7 @@ export function FlowCanvas({ onNodeClick, selectedNode, nodeTexts = {} }: FlowCa
 
         {/* Bottom-Left Node Text — to the left */}
         {bottomLeftLines.length > 0 && (
-          <TextLines lines={bottomLeftLines} x={0} y={390} width={110} />
+          <TextLines lines={bottomLeftLines} x={0} y={390} width={250} />
         )}
 
         {/* Bottom-Right Node — rectangle with top-left corner clipped */}
@@ -168,7 +170,7 @@ export function FlowCanvas({ onNodeClick, selectedNode, nodeTexts = {} }: FlowCa
           aria-label="Bottom-right node"
         >
           <path
-            d="M590,430 L640,370 L870,370 L870,610 L590,610 Z"
+            d="M740,430 L790,370 L1020,370 L1020,610 L740,610 Z"
             className={cn(
               "transition-all duration-200",
               selectedNode === "bottom-right"
@@ -182,7 +184,7 @@ export function FlowCanvas({ onNodeClick, selectedNode, nodeTexts = {} }: FlowCa
 
         {/* Bottom-Right Node Text — to the right */}
         {bottomRightLines.length > 0 && (
-          <TextLines lines={bottomRightLines} x={900} y={390} width={180} />
+          <TextLines lines={bottomRightLines} x={1050} y={390} width={250} />
         )}
       </svg>
     </div>
