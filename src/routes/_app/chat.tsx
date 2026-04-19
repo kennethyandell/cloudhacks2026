@@ -4,7 +4,7 @@ import { ChatLeftSidebar, ChatRightSidebar, type AgentThought } from '@/componen
 import { ChatWindow, type Message } from '@/components/chat/chat-window'
 import type { FlowNodeId } from '@/components/configure/flow-canvas'
 import { invokeMagi } from '@/utils/magiStream'
-import { api } from '@/utils/api'
+import { api, type AgentNamesResponse } from '@/utils/api'
 
 export const Route = createFileRoute('/_app/chat')({
   component: ChatPage,
@@ -20,16 +20,27 @@ function ChatPage() {
   const agentNamesRef = useRef({ melchior: "Melchior", balthasar: "Balthasar", casper: "Casper" })
 
   useEffect(() => {
-    api.presets.list("default-user").then((items: any[]) => {
-      if (items && items.length > 0) {
-        const latest = items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
-        agentNamesRef.current = {
-          melchior: latest.melchior?.name || "Melchior",
-          balthasar: latest.balthasar?.name || "Balthasar",
-          casper: latest.casper?.name || "Casper",
-        }
+    // Prefer the per-user agent-names sentinel row (written on SubagentForm save
+    // and synced on preset apply). Fall back to the latest preset's embedded
+    // names, then to the hard-coded defaults. This is what renders inside the
+    // Subagent Thoughts stream when collaborator-1/2/3 traces arrive.
+    Promise.all([
+      api.agentNames.get("default-user").catch(() => ({} as AgentNamesResponse)),
+      api.presets.list("default-user").catch(() => [] as any[]),
+    ]).then(([agentNames, items]) => {
+      const latest =
+        items && items.length > 0
+          ? [...items].sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            )[0]
+          : null
+
+      agentNamesRef.current = {
+        melchior: agentNames.melchior ?? latest?.melchior?.name ?? "Melchior",
+        balthasar: agentNames.balthasar ?? latest?.balthasar?.name ?? "Balthasar",
+        casper: agentNames.casper ?? latest?.casper?.name ?? "Casper",
       }
-    }).catch(err => console.error("Failed to load preset for agent names", err))
+    })
   }, [])
 
   const updateMessages = (newMessages: Message[]) => {

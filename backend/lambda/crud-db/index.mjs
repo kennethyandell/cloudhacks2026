@@ -1,8 +1,23 @@
 /**
  * crud-db Lambda
  *
- * Handles presets and chats CRUD, and asynchronously updates AWS Bedrock Agents
- * whenever a preset is saved.
+ * Handles presets, chats, and agent-display-name CRUD, and asynchronously
+ * updates AWS Bedrock Agents whenever a preset is saved.
+ *
+ * Routes:
+ *   GET    /presets            - list real presets for a user (excludes the
+ *                                agent-names sentinel via begins_with).
+ *   GET    /presets/status     - status of the most recent preset apply.
+ *   POST   /presets            - save a preset, sync the agent-names sentinel
+ *                                row to the incoming names, and kick off the
+ *                                async Bedrock rebuild (~12 min).
+ *   DELETE /presets            - delete a preset by id.
+ *   GET    /agent-names        - read the sentinel row with per-user display
+ *                                names for melchior/balthasar/casper. Cheap,
+ *                                no Bedrock involvement.
+ *   POST   /agent-names        - upsert a single agent's display name into the
+ *                                sentinel row. Cheap, no Bedrock involvement.
+ *   GET    /chats, POST /chats - chat history CRUD.
  *
  * Environment variables required:
  *   MELCHIOR_AGENT_ID         - Bedrock agent ID for Melchior
@@ -54,7 +69,7 @@ import dynamoDBPkg from "@aws-sdk/client-dynamodb";
 const { DynamoDBClient } = dynamoDBPkg;
 
 import dynamoDBDocPkg from "@aws-sdk/lib-dynamodb";
-const { DynamoDBDocumentClient, PutCommand, QueryCommand, DeleteCommand, UpdateCommand } = dynamoDBDocPkg;
+const { DynamoDBDocumentClient, PutCommand, QueryCommand, DeleteCommand, UpdateCommand, GetCommand } = dynamoDBDocPkg;
 
 import bedrockAgentPkg from "@aws-sdk/client-bedrock-agent";
 const {
@@ -112,6 +127,12 @@ const HEADERS = {
 // AWS Bedrock enforces instruction length >= 40 characters on UpdateAgent.
 const MIN_PROMPT_LENGTH = 40;
 
+// Reserved sort-key value for the per-user display-name row in the presets table.
+// Real presets always use presetID = "preset-<timestamp>", so begins_with("preset-")
+// cleanly separates them from this sentinel.
+const AGENT_NAMES_ID = "__agent-names__";
+const VALID_AGENT_KEYS = new Set(["melchior", "balthasar", "casper"]);
+
 function validatePreset(body) {
   const entries = [
     ["melchior",   body.melchior?.prompt],
@@ -153,8 +174,8 @@ export const handler = async (event) => {
         const result = await ddb.send(
           new QueryCommand({
             TableName: "presets",
-            KeyConditionExpression: "userID = :uid",
-            ExpressionAttributeValues: { ":uid": uid },
+            KeyConditionExpression: "userID = :uid AND begins_with(presetID, :prefix)",
+            ExpressionAttributeValues: { ":uid": uid, ":prefix": "preset-" },
             ScanIndexForward: false,
             Limit: 1,
           })
@@ -202,6 +223,28 @@ export const handler = async (event) => {
           })
         );
 
+        // Sync the per-user display-name sentinel so the applied preset's names
+        // become authoritative across the frontend (otherwise a prior rename via
+        // SubagentForm would still win on the next mount).
+        try {
+          await ddb.send(
+            new UpdateCommand({
+              TableName: "presets",
+              Key: { userID: userId, presetID: AGENT_NAMES_ID },
+              UpdateExpression:
+                "SET melchior = :m, balthasar = :b, casper = :c, updatedAt = :ts",
+              ExpressionAttributeValues: {
+                ":m":  body.melchior?.name  || "Melchior",
+                ":b":  body.balthasar?.name || "Balthasar",
+                ":c":  body.casper?.name    || "Casper",
+                ":ts": now,
+              },
+            })
+          );
+        } catch (err) {
+          console.error("Failed to sync agent-names sentinel on preset apply:", err);
+        }
+
         await lambdaClient.send(
           new InvokeCommand({
             FunctionName: process.env.AWS_LAMBDA_FUNCTION_NAME,
@@ -237,8 +280,8 @@ export const handler = async (event) => {
         const result = await ddb.send(
           new QueryCommand({
             TableName: "presets",
-            KeyConditionExpression: "userID = :uid",
-            ExpressionAttributeValues: { ":uid": userId },
+            KeyConditionExpression: "userID = :uid AND begins_with(presetID, :prefix)",
+            ExpressionAttributeValues: { ":uid": userId, ":prefix": "preset-" },
           })
         );
         return {
@@ -259,6 +302,83 @@ export const handler = async (event) => {
           statusCode: 200,
           headers: HEADERS,
           body: JSON.stringify({ message: "Preset deleted" }),
+        };
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // /agent-names — lightweight display-name persistence for the three
+    // subagents. Decoupled from the Bedrock rebuild path: writes only touch
+    // the sentinel row { userID, presetID: "__agent-names__" } in the presets
+    // table. Frontend uses this to keep subagent rename state consistent
+    // across refreshes and navigation without triggering a preset apply.
+    // -----------------------------------------------------------------------
+    if (path.startsWith("/agent-names")) {
+      if (method === "GET") {
+        const qp = event.queryStringParameters || {};
+        const uid = qp.userId || "default-user";
+        const result = await ddb.send(
+          new GetCommand({
+            TableName: "presets",
+            Key: { userID: uid, presetID: AGENT_NAMES_ID },
+          })
+        );
+        const item = result.Item || {};
+        return {
+          statusCode: 200,
+          headers: HEADERS,
+          body: JSON.stringify({
+            melchior: item.melchior,
+            balthasar: item.balthasar,
+            casper: item.casper,
+            updatedAt: item.updatedAt,
+          }),
+        };
+      }
+
+      if (method === "POST") {
+        const agentKey = body.agentKey;
+        const rawName = typeof body.name === "string" ? body.name.trim() : "";
+
+        if (!VALID_AGENT_KEYS.has(agentKey)) {
+          return {
+            statusCode: 400,
+            headers: HEADERS,
+            body: JSON.stringify({
+              error: "agentKey must be one of: melchior, balthasar, casper",
+            }),
+          };
+        }
+
+        if (!rawName) {
+          return {
+            statusCode: 400,
+            headers: HEADERS,
+            body: JSON.stringify({ error: "name must be a non-empty string" }),
+          };
+        }
+
+        await ddb.send(
+          new UpdateCommand({
+            TableName: "presets",
+            Key: { userID: userId, presetID: AGENT_NAMES_ID },
+            UpdateExpression: "SET #k = :name, updatedAt = :ts",
+            ExpressionAttributeNames: { "#k": agentKey },
+            ExpressionAttributeValues: {
+              ":name": rawName,
+              ":ts": new Date().toISOString(),
+            },
+          })
+        );
+
+        return {
+          statusCode: 200,
+          headers: HEADERS,
+          body: JSON.stringify({
+            message: "Agent name saved",
+            agentKey,
+            name: rawName,
+          }),
         };
       }
     }

@@ -8,8 +8,7 @@ import { SubagentForm } from '@/components/configure/subagent-form'
 import { type SubagentConfig, BEDROCK_MODELS, DEFAULT_SUPERVISOR_PROMPT } from '@/components/configure/models'
 import { PresetManager } from '@/components/configure/preset-manager'
 import { AgentLoadingDialog } from '@/components/configure/agent-loading-dialog'
-import { api } from '@/utils/api'
-import { NODE_TO_AGENT } from '@/lib/constants'
+import { api, type AgentNamesResponse } from '@/utils/api'
 
 export const Route = createFileRoute('/_app/configure')({
   component: ConfigurePage,
@@ -79,17 +78,45 @@ function ConfigureContent() {
   )
 
   useEffect(() => {
-    api.presets.list("default-user").then((items: any[]) => {
-      if (items && items.length > 0) {
-        // Find latest preset
-        const latest = items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
-        setConfigs({
-          "top": { name: latest.melchior?.name || "Subagent A", modelId: latest.melchior?.model || BEDROCK_MODELS[0].id, prompt: latest.melchior?.prompt || "" },
-          "bottom-left": { name: latest.balthasar?.name || "Subagent B", modelId: latest.balthasar?.model || BEDROCK_MODELS[0].id, prompt: latest.balthasar?.prompt || "" },
-          "bottom-right": { name: latest.casper?.name || "Subagent C", modelId: latest.casper?.model || BEDROCK_MODELS[0].id, prompt: latest.casper?.prompt || "" },
-        })
+    // Load display names from the sentinel row (authoritative for names) and
+    // model/prompt from the latest real preset. `agentNames` wins over the
+    // preset's embedded name so renames made via SubagentForm survive across
+    // refreshes even if the user never saved them as a preset.
+    Promise.all([
+      api.agentNames.get("default-user").catch(() => ({} as AgentNamesResponse)),
+      api.presets.list("default-user").catch(() => [] as any[]),
+    ]).then(([agentNames, items]) => {
+      const latest =
+        items && items.length > 0
+          ? [...items].sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            )[0]
+          : null
+
+      // Only overwrite state if we actually have something from the backend;
+      // otherwise keep the initial defaults set in useState.
+      if (!latest && !agentNames.melchior && !agentNames.balthasar && !agentNames.casper) {
+        return
       }
-    }).catch(err => console.error("Failed to load presets", err))
+
+      setConfigs({
+        "top": {
+          name: agentNames.melchior ?? latest?.melchior?.name ?? "Subagent A",
+          modelId: latest?.melchior?.model || BEDROCK_MODELS[0].id,
+          prompt: latest?.melchior?.prompt || "",
+        },
+        "bottom-left": {
+          name: agentNames.balthasar ?? latest?.balthasar?.name ?? "Subagent B",
+          modelId: latest?.balthasar?.model || BEDROCK_MODELS[0].id,
+          prompt: latest?.balthasar?.prompt || "",
+        },
+        "bottom-right": {
+          name: agentNames.casper ?? latest?.casper?.name ?? "Subagent C",
+          modelId: latest?.casper?.model || BEDROCK_MODELS[0].id,
+          prompt: latest?.casper?.prompt || "",
+        },
+      })
+    })
   }, [])
 
   const handleApplyPreset = useCallback(
