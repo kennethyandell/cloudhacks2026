@@ -27,7 +27,7 @@ import {
 } from "./models"
 import type { FlowNodeId } from "./flow-canvas"
 import { NODE_TO_AGENT } from "@/lib/constants"
-import { api } from "@/utils/api"
+import { useAgentNamesContext } from "@/utils/agent-names-context"
 
 type SubagentFormProps = {
   nodeId: FlowNodeId
@@ -43,27 +43,20 @@ export function SubagentForm({
   const [config, setConfig] = useState<SubagentConfig>(
     initialValues ?? getDefaultSubagentConfig()
   )
+  const { updateName } = useAgentNamesContext()
 
   const handleSave = useCallback(() => {
     onSave?.(nodeId, config)
 
-    // Persist the display name to DynamoDB (sentinel row in the presets table)
-    // so it survives refreshes and is visible to the Chat page. Fire-and-forget:
-    // local state already reflects the rename, and the user can retry by clicking
-    // Save again if the request fails. Skip the write if the name hasn't changed
-    // since initial render, to avoid redundant POSTs when only prompt/model edits.
+    // Push the display name through the shared agent-names context so every
+    // consumer (landing boot lines, chat empty state, Agent Activity sidebar,
+    // loading dialog quotes) re-renders in the same tick. The context also
+    // writes through to the backend sentinel row for cold-boot persistence.
     const trimmed = config.name.trim()
-    const initialTrimmed = (initialValues?.name ?? "").trim()
-    if (trimmed && trimmed !== initialTrimmed) {
-      api.agentNames
-        .save({
-          userId: "default-user",
-          agentKey: NODE_TO_AGENT[nodeId],
-          name: trimmed,
-        })
-        .catch((err) => console.error("Failed to persist agent name", err))
+    if (trimmed) {
+      updateName(NODE_TO_AGENT[nodeId], trimmed)
     }
-  }, [nodeId, config, onSave, initialValues])
+  }, [nodeId, config, onSave, updateName])
 
   // Group models by provider
   const modelsByProvider = BEDROCK_MODELS.reduce(

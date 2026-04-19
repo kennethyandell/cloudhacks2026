@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Loader2, CheckCircle2, XCircle } from "lucide-react"
 import {
   Dialog,
@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { useAgentNames } from "@/utils/agent-names-context"
 
 type AgentUpdateStatus = "idle" | "updating" | "ready" | "failed"
 
@@ -18,22 +19,33 @@ type AgentLoadingDialogProps = {
   onClose: () => void
 }
 
-const QUOTES = [
-  "MAGI System coming online...",
-  "Melchior is calibrating neural pathways...",
-  "Balthasar is synchronizing knowledge base...",
-  "Casper is updating inference model...",
-  "Validating agent instructions...",
-  "Running synchronization protocols...",
-  "Agent consensus algorithm engaged...",
-  "Preparing deployment manifest...",
-  "Cross-referencing instruction sets...",
-  "Finalizing model configuration...",
-]
+/** Builds the rotating quote list using the currently configured agent names,
+ *  so the dialog never flashes stale "Melchior/Balthasar/Casper" strings after
+ *  a rename or preset apply. */
+function buildQuotes(melchior: string, balthasar: string, casper: string) {
+  return [
+    "MAGI System coming online...",
+    `${melchior} is calibrating neural pathways...`,
+    `${balthasar} is synchronizing knowledge base...`,
+    `${casper} is updating inference model...`,
+    "Validating agent instructions...",
+    "Running synchronization protocols...",
+    "Agent consensus algorithm engaged...",
+    "Preparing deployment manifest...",
+    "Cross-referencing instruction sets...",
+    "Finalizing model configuration...",
+  ]
+}
 
 export function AgentLoadingDialog({ open, status, onClose }: AgentLoadingDialogProps) {
   const [quoteIndex, setQuoteIndex] = useState(0)
   const [visible, setVisible] = useState(true)
+  const agentNames = useAgentNames()
+
+  const quotes = useMemo(
+    () => buildQuotes(agentNames.melchior, agentNames.balthasar, agentNames.casper),
+    [agentNames.melchior, agentNames.balthasar, agentNames.casper]
+  )
 
   // Rotate quotes with a fade effect while updating
   useEffect(() => {
@@ -43,14 +55,14 @@ export function AgentLoadingDialog({ open, status, onClose }: AgentLoadingDialog
       // Fade out
       setVisible(false)
       setTimeout(() => {
-        setQuoteIndex((i) => (i + 1) % QUOTES.length)
+        setQuoteIndex((i) => (i + 1) % quotes.length)
         // Fade back in
         setVisible(true)
       }, 300)
     }, 3000)
 
     return () => clearInterval(interval)
-  }, [status])
+  }, [status, quotes.length])
 
   // Reset quote index when dialog opens
   useEffect(() => {
@@ -101,7 +113,7 @@ export function AgentLoadingDialog({ open, status, onClose }: AgentLoadingDialog
                 className="text-center text-sm text-muted-foreground transition-opacity duration-300"
                 style={{ opacity: visible ? 1 : 0 }}
               >
-                {QUOTES[quoteIndex]}
+                {quotes[quoteIndex]}
               </p>
             </>
           )}

@@ -1,4 +1,5 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router'
+import { AgentNamesProvider } from '@/utils/agent-names-context'
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -6,8 +7,10 @@ export const Route = createRootRoute({
 
 function RootLayout() {
   return (
-    <div className="min-h-svh bg-background text-foreground">
-      <Outlet />
-    </div>
+    <AgentNamesProvider>
+      <div className="min-h-svh bg-background text-foreground">
+        <Outlet />
+      </div>
+    </AgentNamesProvider>
   )
 }

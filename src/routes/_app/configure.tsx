@@ -8,7 +8,8 @@ import { SubagentForm } from '@/components/configure/subagent-form'
 import { type SubagentConfig, BEDROCK_MODELS, DEFAULT_SUPERVISOR_PROMPT } from '@/components/configure/models'
 import { PresetManager } from '@/components/configure/preset-manager'
 import { AgentLoadingDialog } from '@/components/configure/agent-loading-dialog'
-import { api, type AgentNamesResponse } from '@/utils/api'
+import { api } from '@/utils/api'
+import { useAgentNamesContext } from '@/utils/agent-names-context'
 
 export const Route = createFileRoute('/_app/configure')({
   component: ConfigurePage,
@@ -30,6 +31,7 @@ type AgentUpdateStatus = "idle" | "updating" | "ready" | "failed"
 function ConfigureContent() {
   const [selectedNode, setSelectedNode] = useState<FlowNodeId | null>(null)
   const { setPage, clearPage } = useConfigureSidebar()
+  const { names: agentNames, setNames: setAgentNames } = useAgentNamesContext()
 
   // Store configs per node so edits persist across selections
   const [configs, setConfigs] = useState<Record<FlowNodeId, SubagentConfig>>({
@@ -78,46 +80,60 @@ function ConfigureContent() {
   )
 
   useEffect(() => {
-    // Load display names from the sentinel row (authoritative for names) and
-    // model/prompt from the latest real preset. `agentNames` wins over the
-    // preset's embedded name so renames made via SubagentForm survive across
-    // refreshes even if the user never saved them as a preset.
-    Promise.all([
-      api.agentNames.get("default-user").catch(() => ({} as AgentNamesResponse)),
-      api.presets.list("default-user").catch(() => [] as any[]),
-    ]).then(([agentNames, items]) => {
-      const latest =
-        items && items.length > 0
-          ? [...items].sort(
-              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            )[0]
-          : null
+    // Names are owned by the AgentNamesProvider (shared across pages). Here we
+    // only hydrate model + prompt per node from the latest real preset; the
+    // per-node `name` is kept in sync with the context via the effect below.
+    api.presets
+      .list("default-user")
+      .catch(() => [] as any[])
+      .then((items) => {
+        const latest =
+          items && items.length > 0
+            ? [...items].sort(
+                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              )[0]
+            : null
+        if (!latest) return
 
-      // Only overwrite state if we actually have something from the backend;
-      // otherwise keep the initial defaults set in useState.
-      if (!latest && !agentNames.melchior && !agentNames.balthasar && !agentNames.casper) {
-        return
-      }
-
-      setConfigs({
-        "top": {
-          name: agentNames.melchior ?? latest?.melchior?.name ?? "Subagent A",
-          modelId: latest?.melchior?.model || BEDROCK_MODELS[0].id,
-          prompt: latest?.melchior?.prompt || "",
-        },
-        "bottom-left": {
-          name: agentNames.balthasar ?? latest?.balthasar?.name ?? "Subagent B",
-          modelId: latest?.balthasar?.model || BEDROCK_MODELS[0].id,
-          prompt: latest?.balthasar?.prompt || "",
-        },
-        "bottom-right": {
-          name: agentNames.casper ?? latest?.casper?.name ?? "Subagent C",
-          modelId: latest?.casper?.model || BEDROCK_MODELS[0].id,
-          prompt: latest?.casper?.prompt || "",
-        },
+        setConfigs((prev) => ({
+          "top": {
+            name: prev["top"].name,
+            modelId: latest?.melchior?.model || BEDROCK_MODELS[0].id,
+            prompt: latest?.melchior?.prompt || "",
+          },
+          "bottom-left": {
+            name: prev["bottom-left"].name,
+            modelId: latest?.balthasar?.model || BEDROCK_MODELS[0].id,
+            prompt: latest?.balthasar?.prompt || "",
+          },
+          "bottom-right": {
+            name: prev["bottom-right"].name,
+            modelId: latest?.casper?.model || BEDROCK_MODELS[0].id,
+            prompt: latest?.casper?.prompt || "",
+          },
+        }))
       })
-    })
   }, [])
+
+  // Mirror the context-owned display names into `configs` so the flow-canvas
+  // labels and SubagentForm initialValues stay in sync with renames made from
+  // any other surface (preset apply, other tabs, etc).
+  useEffect(() => {
+    setConfigs((prev) => {
+      if (
+        prev["top"].name === agentNames.melchior &&
+        prev["bottom-left"].name === agentNames.balthasar &&
+        prev["bottom-right"].name === agentNames.casper
+      ) {
+        return prev
+      }
+      return {
+        "top": { ...prev["top"], name: agentNames.melchior },
+        "bottom-left": { ...prev["bottom-left"], name: agentNames.balthasar },
+        "bottom-right": { ...prev["bottom-right"], name: agentNames.casper },
+      }
+    })
+  }, [agentNames])
 
   const handleApplyPreset = useCallback(
     async (
@@ -126,6 +142,15 @@ function ConfigureContent() {
     ) => {
       setConfigs(presetConfigs)
       setSelectedNode(null)
+      // Push the preset's display names into the shared context BEFORE the
+      // dialog opens, so the rotating quotes ("{melchior} is calibrating...")
+      // and every other surface instantly reflect the names the user just
+      // applied instead of flashing the previous values.
+      setAgentNames({
+        melchior: presetConfigs["top"].name,
+        balthasar: presetConfigs["bottom-left"].name,
+        casper: presetConfigs["bottom-right"].name,
+      })
       setUpdateStatus("updating")
 
       try {
@@ -160,7 +185,7 @@ function ConfigureContent() {
         setUpdateStatus("failed")
       }
     },
-    []
+    [setAgentNames]
   )
 
   // Mount PresetManager in sidebar when no node is selected

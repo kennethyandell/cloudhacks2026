@@ -4,7 +4,8 @@ import { ChatLeftSidebar, ChatRightSidebar, type AgentThought } from '@/componen
 import { ChatWindow, type Message } from '@/components/chat/chat-window'
 import type { FlowNodeId } from '@/components/configure/flow-canvas'
 import { invokeMagi } from '@/utils/magiStream'
-import { api, type AgentNamesResponse } from '@/utils/api'
+import { api } from '@/utils/api'
+import { useAgentNames, DEFAULT_AGENT_NAMES } from '@/utils/use-agent-names'
 
 export const Route = createFileRoute('/_app/chat')({
   component: ChatPage,
@@ -17,31 +18,16 @@ function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const messagesRef = useRef<Message[]>([])
   const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0)
-  const agentNamesRef = useRef({ melchior: "Melchior", balthasar: "Balthasar", casper: "Casper" })
+  const agentNames = useAgentNames()
 
+  // Mirror agentNames into a ref so the invokeMagi trace callback (below) can
+  // read the latest values without closing over stale state. This is the
+  // source used when mapping Bedrock collaborator-1/2/3 traces to display
+  // names in the Subagent Thoughts stream.
+  const agentNamesRef = useRef(DEFAULT_AGENT_NAMES)
   useEffect(() => {
-    // Prefer the per-user agent-names sentinel row (written on SubagentForm save
-    // and synced on preset apply). Fall back to the latest preset's embedded
-    // names, then to the hard-coded defaults. This is what renders inside the
-    // Subagent Thoughts stream when collaborator-1/2/3 traces arrive.
-    Promise.all([
-      api.agentNames.get("default-user").catch(() => ({} as AgentNamesResponse)),
-      api.presets.list("default-user").catch(() => [] as any[]),
-    ]).then(([agentNames, items]) => {
-      const latest =
-        items && items.length > 0
-          ? [...items].sort(
-              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            )[0]
-          : null
-
-      agentNamesRef.current = {
-        melchior: agentNames.melchior ?? latest?.melchior?.name ?? "Melchior",
-        balthasar: agentNames.balthasar ?? latest?.balthasar?.name ?? "Balthasar",
-        casper: agentNames.casper ?? latest?.casper?.name ?? "Casper",
-      }
-    })
-  }, [])
+    agentNamesRef.current = agentNames
+  }, [agentNames])
 
   const updateMessages = (newMessages: Message[]) => {
     setMessages(newMessages)
@@ -189,7 +175,12 @@ function ChatPage() {
       />
 
       <div className="flex flex-1 flex-col border-r border-border/40 relative min-h-0">
-        <ChatWindow key={activeChatId} messages={messages} onSendMessage={handleSendMessage} />
+        <ChatWindow
+          key={activeChatId}
+          messages={messages}
+          onSendMessage={handleSendMessage}
+          agentNames={agentNames}
+        />
       </div>
 
       <ChatRightSidebar activeNode={activeNode} thoughts={thoughts} />

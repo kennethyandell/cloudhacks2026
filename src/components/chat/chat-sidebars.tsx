@@ -62,7 +62,7 @@ export function ChatLeftSidebar({
         </Button>
       </div>
       <ScrollArea className="flex-1 min-h-0">
-        <div className="flex flex-col p-2">
+        <div className="flex flex-col py-2">
           {previousChats.map((chat) => {
             const isActive = activeChatId === chat.id
             return (
@@ -71,7 +71,7 @@ export function ChatLeftSidebar({
                 type="button"
                 onClick={() => onSelectChat?.(chat.id, chat.messages)}
                 className={cn(
-                  "group relative flex items-center gap-2 border-l-2 px-3 py-2 text-left text-[12px] transition-colors",
+                  "group relative flex w-full min-w-0 items-center gap-2 border-l-2 px-3 py-2 text-left text-[12px] transition-colors",
                   isActive
                     ? "border-primary bg-accent text-primary"
                     : "border-transparent text-foreground hover:bg-muted/40 hover:text-primary"
@@ -146,12 +146,16 @@ export function ChatRightSidebar({
         <SectionHeader>{title}</SectionHeader>
       </div>
       
-      {/* Miniature Graph Top Section */}
-      <div className="h-48 shrink-0 border-b border-border bg-background/50 relative">
-        <div className="absolute top-2 left-3 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+      {/* Miniature Graph Top Section. The Architecture caption lives in its
+          own header row so the top hex (now flush with y=0) doesn't collide
+          with the label. */}
+      <div className="h-48 shrink-0 flex flex-col border-b border-border bg-background/50">
+        <div className="shrink-0 px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
           &gt; Architecture
         </div>
-        <FlowCanvas mini activeNode={activeNode} />
+        <div className="flex-1 min-h-0">
+          <FlowCanvas mini activeNode={activeNode} />
+        </div>
       </div>
 
       {/* Agents' Thoughts Bottom Section */}

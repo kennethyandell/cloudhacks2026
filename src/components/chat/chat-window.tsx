@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { SectionHeader, BootLine } from "@/components/magi/terminal"
+import { DEFAULT_AGENT_NAMES, type AgentNames } from "@/utils/use-agent-names"
 import { cn } from "@/lib/utils"
 
 /**
@@ -53,11 +54,13 @@ export type Message = {
 type ChatWindowProps = {
   messages?: Message[]
   onSendMessage?: (text: string) => void
+  agentNames?: AgentNames
 }
 
 export function ChatWindow({
   messages = [],
   onSendMessage,
+  agentNames = DEFAULT_AGENT_NAMES,
 }: ChatWindowProps) {
   const [inputValue, setInputValue] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -91,9 +94,9 @@ export function ChatWindow({
             <div className="flex h-full flex-1 flex-col items-center justify-center">
               <div className="w-full max-w-sm space-y-1">
                 <BootLine label="INIT MAGI.SYS" />
-                <BootLine label="LINK MELCHIOR-1" />
-                <BootLine label="LINK BALTHASAR-2" />
-                <BootLine label="LINK CASPER-3" />
+                <BootLine label={`LINK ${agentNames.melchior.toUpperCase()}-1`} />
+                <BootLine label={`LINK ${agentNames.balthasar.toUpperCase()}-2`} />
+                <BootLine label={`LINK ${agentNames.casper.toUpperCase()}-3`} />
                 <div className="flex items-baseline gap-2 pt-1 text-[13px] leading-6 text-muted-foreground">
                   <span>&gt;</span>
                   <span className="uppercase tracking-[0.12em]">
@@ -153,6 +156,18 @@ export function ChatWindow({
 
       {/* Input */}
       <div className="p-4 border-t border-border shrink-0">
+        <div className="mx-auto mb-2 flex max-w-3xl items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
+          <span className="text-primary">&gt;</span>
+          {inputValue.trim().length === 0 ? (
+            <span className="text-muted-foreground">
+              Type in your response.
+            </span>
+          ) : (
+            <span className="text-primary">
+              Drafting transmission &mdash; {inputValue.trim().length} chars &middot; press enter to send
+            </span>
+          )}
+        </div>
         <form
           onSubmit={handleSubmit}
           className="mx-auto flex max-w-3xl items-center gap-2 border border-border bg-transparent px-3 py-1.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/40"

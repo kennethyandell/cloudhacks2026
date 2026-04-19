@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { BootLine, CornerBracket } from '@/components/magi/terminal'
+import { useAgentNames } from '@/utils/use-agent-names'
 
 export const Route = createFileRoute('/')({
   component: LandingPage,
@@ -45,6 +46,8 @@ function TrilateralDiagram() {
 }
 
 function LandingPage() {
+  const { melchior, balthasar, casper } = useAgentNames()
+
   return (
     <div
       className="relative flex h-svh w-full flex-col overflow-hidden"
@@ -100,9 +103,9 @@ function LandingPage() {
 
           <div className="mt-8 max-w-md space-y-1">
             <BootLine label="INIT MAGI.SYS" />
-            <BootLine label="LINK MELCHIOR-1" />
-            <BootLine label="LINK BALTHASAR-2" />
-            <BootLine label="LINK CASPER-3" />
+            <BootLine label={`LINK ${melchior.toUpperCase()}-1`} />
+            <BootLine label={`LINK ${balthasar.toUpperCase()}-2`} />
+            <BootLine label={`LINK ${casper.toUpperCase()}-3`} />
             <div
               className="flex items-baseline gap-2 pt-1 text-[13px] leading-6"
               style={{ color: MUTED }}

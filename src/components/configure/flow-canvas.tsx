@@ -13,101 +13,125 @@ type FlowCanvasProps = {
   mini?: boolean
 }
 
-function TextLines({
+/**
+ * Renders a stacked list of MAGI-style `> LABEL` lines inside a foreignObject
+ * so they can flow with HTML truncation while living in SVG coordinates. Used
+ * for the per-node labels that sit OUTSIDE each shape (right of the top node,
+ * left of the bottom-left node, right of the bottom-right node).
+ */
+function ExteriorTextLines({
   lines,
   x,
   y,
   width,
+  height,
+  align = "left",
   lineHeight = 36,
 }: {
   lines: string[]
   x: number
   y: number
   width: number
+  height: number
+  align?: "left" | "right"
   lineHeight?: number
 }) {
+  if (lines.length === 0) return null
   return (
-    <g>
-      {lines.map((text, i) => {
-        const lineY = y + i * lineHeight
-        return (
-          <g key={i}>
-            <foreignObject
-              x={x}
-              y={lineY - lineHeight / 2}
-              width={width}
-              height={lineHeight}
-            >
-              <div className="flex h-full w-full items-center gap-2">
-                <span className="text-muted-foreground text-[14px]">&gt;</span>
-                <span className="w-full truncate text-[13px] uppercase tracking-[0.12em] text-foreground font-mono">
-                  {text}
-                </span>
-              </div>
-            </foreignObject>
-            <line
-              x1={x}
-              y1={lineY + lineHeight * 0.45}
-              x2={x + width}
-              y2={lineY + lineHeight * 0.45}
-              className="stroke-border"
-              strokeWidth="1"
-              strokeDasharray="2 3"
-            />
-          </g>
-        )
-      })}
-    </g>
+    <foreignObject x={x} y={y} width={width} height={height}>
+      <div
+        className={cn(
+          "flex h-full w-full flex-col justify-start gap-1 overflow-hidden",
+          align === "right" ? "items-end" : "items-start"
+        )}
+      >
+        {lines.map((text, i) => (
+          <div
+            key={i}
+            className="flex w-full min-w-0 items-center gap-2"
+            style={{ height: lineHeight }}
+          >
+            <span className="shrink-0 text-muted-foreground text-[13px] font-mono">
+              &gt;
+            </span>
+            <span className="min-w-0 flex-1 truncate text-[12px] uppercase tracking-[0.12em] text-foreground font-mono">
+              {text}
+            </span>
+          </div>
+        ))}
+      </div>
+    </foreignObject>
   )
 }
 
-export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = {}, mini = false }: FlowCanvasProps) {
+export function FlowCanvas({
+  onNodeClick,
+  selectedNode,
+  activeNode,
+  nodeTexts = {},
+  mini = false,
+}: FlowCanvasProps) {
   const [hoveredNode, setHoveredNode] = useState<FlowNodeId | null>(null)
 
   const topLines = nodeTexts["top"] ?? []
   const bottomLeftLines = nodeTexts["bottom-left"] ?? []
   const bottomRightLines = nodeTexts["bottom-right"] ?? []
 
+  // Shared viewBox — the three shapes extend to all four frame edges so
+  // main and mini render from the same coordinate system.
+  const viewBox = "0 0 1340 860"
+
   return (
-    <div className={cn("flex flex-1 items-center justify-center", mini ? "p-2" : "p-8")}>
+    <div
+      className={cn(
+        "flex flex-1 items-center justify-center",
+        mini ? "h-full w-full" : "p-4"
+      )}
+    >
       <svg
-        viewBox="-20 0 1400 650"
-        className={cn("w-full", mini ? "h-auto max-h-48" : "h-full max-h-[calc(100svh-5rem)]")}
+        viewBox={viewBox}
+        className={cn("w-full", mini ? "h-full" : "h-full max-h-[calc(100svh-5rem)]")}
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* Connection lines */}
-        {/* Top to Bottom-Left */}
+        {/* Thick structural trunks plugging into the middle of each slope.
+            With the bottom shapes pushed outward, each diagonal now fans out
+            from the top node (down-left to BL, down-right to BR) with enough
+            horizontal sweep to read as a smooth diagonal instead of a
+            cramped, near-vertical sliver. */}
+        {/* Top <-> Bottom-Left: top's bottom-left slope midpoint -> BL's top-right slope midpoint */}
         <line
-          x1="560"
-          y1="280"
-          x2="460"
-          y2="370"
+          x1="540"
+          y1="320"
+          x2="440"
+          y2="480"
           className="stroke-muted-foreground"
-          strokeWidth="2"
-          strokeLinecap="round"
+          strokeWidth="14"
+          strokeLinecap="butt"
         />
-        {/* Top to Bottom-Right */}
+        {/* Top <-> Bottom-Right: top's bottom-right slope midpoint -> BR's top-left slope midpoint */}
         <line
-          x1="740"
-          y1="280"
-          x2="840"
-          y2="370"
+          x1="820"
+          y1="320"
+          x2="900"
+          y2="480"
           className="stroke-muted-foreground"
-          strokeWidth="2"
-          strokeLinecap="round"
+          strokeWidth="14"
+          strokeLinecap="butt"
         />
-        {/* Bottom-Left to Bottom-Right */}
+        {/* Bottom-Left <-> Bottom-Right horizontal trunk, plugging into the
+            midpoint of each shape's inner vertical edge. */}
         <line
-          x1="550"
-          y1="490"
-          x2="750"
-          y2="490"
+          x1="480"
+          y1="620"
+          x2="860"
+          y2="620"
           className="stroke-muted-foreground"
-          strokeWidth="2"
-          strokeLinecap="round"
+          strokeWidth="14"
+          strokeLinecap="butt"
         />
 
-        {/* Top Node — rectangle with bottom corners clipped */}
+        {/* Top Node — rectangle with both bottom corners clipped, sized so
+            there's room for its label column on the right. */}
         <g
           className={cn(onNodeClick && "cursor-pointer")}
           onClick={() => onNodeClick?.("top")}
@@ -118,7 +142,7 @@ export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = 
           aria-label="Top node"
         >
           <path
-            d="M470,40 L830,40 L830,240 L770,300 L530,300 L470,240 Z"
+            d="M500,80 L860,80 L860,280 L780,360 L580,360 L500,280 Z"
             className={cn(
               "transition-all duration-200",
               activeNode === "top"
@@ -132,12 +156,19 @@ export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = 
           />
         </g>
 
-        {/* Top Node Text — to the right */}
-        {!mini && topLines.length > 0 && (
-          <TextLines lines={topLines} x={860} y={60} width={350} />
+        {!mini && (
+          <ExteriorTextLines
+            lines={topLines}
+            x={900}
+            y={100}
+            width={420}
+            height={220}
+            align="left"
+          />
         )}
 
-        {/* Bottom-Left Node — rectangle with top-right corner clipped */}
+        {/* Bottom-Left Node — rectangle with top-right corner clipped, sized
+            so there's room for its label column on the left. */}
         <g
           className={cn(onNodeClick && "cursor-pointer")}
           onClick={() => onNodeClick?.("bottom-left")}
@@ -148,7 +179,7 @@ export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = 
           aria-label="Bottom-left node"
         >
           <path
-            d="M280,370 L510,370 L560,430 L560,610 L280,610 Z"
+            d="M180,440 L400,440 L480,520 L480,720 L180,720 Z"
             className={cn(
               "transition-all duration-200",
               activeNode === "bottom-left"
@@ -162,12 +193,19 @@ export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = 
           />
         </g>
 
-        {/* Bottom-Left Node Text — to the left */}
-        {!mini && bottomLeftLines.length > 0 && (
-          <TextLines lines={bottomLeftLines} x={0} y={390} width={250} />
+        {!mini && (
+          <ExteriorTextLines
+            lines={bottomLeftLines}
+            x={20}
+            y={460}
+            width={140}
+            height={260}
+            align="left"
+          />
         )}
 
-        {/* Bottom-Right Node — rectangle with top-left corner clipped */}
+        {/* Bottom-Right Node — rectangle with top-left corner clipped, sized
+            so there's room for its label column on the right. */}
         <g
           className={cn(onNodeClick && "cursor-pointer")}
           onClick={() => onNodeClick?.("bottom-right")}
@@ -178,7 +216,7 @@ export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = 
           aria-label="Bottom-right node"
         >
           <path
-            d="M740,430 L790,370 L1020,370 L1020,610 L740,610 Z"
+            d="M1160,440 L940,440 L860,520 L860,720 L1160,720 Z"
             className={cn(
               "transition-all duration-200",
               activeNode === "bottom-right"
@@ -192,9 +230,15 @@ export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = 
           />
         </g>
 
-        {/* Bottom-Right Node Text — to the right */}
-        {!mini && bottomRightLines.length > 0 && (
-          <TextLines lines={bottomRightLines} x={1050} y={390} width={250} />
+        {!mini && (
+          <ExteriorTextLines
+            lines={bottomRightLines}
+            x={1180}
+            y={460}
+            width={140}
+            height={260}
+            align="left"
+          />
         )}
       </svg>
     </div>
