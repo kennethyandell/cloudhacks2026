@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { BootLine, CornerBracket } from '@/components/magi/terminal'
+import { FlowCanvas } from '@/components/configure/flow-canvas'
 import { useAgentNames } from '@/utils/use-agent-names'
 
 export const Route = createFileRoute('/')({
@@ -13,7 +14,15 @@ const FG = 'oklch(0.92 0 0)'
 const MUTED = 'oklch(0.55 0 0)'
 const AMBER = 'oklch(0.78 0.07 70)'
 
-function TrilateralDiagram() {
+function LandingFlowDiagram({
+  melchior,
+  balthasar,
+  casper,
+}: {
+  melchior: string
+  balthasar: string
+  casper: string
+}) {
   return (
     <div className="relative h-full w-full">
       <div className="absolute top-5 left-5 bottom-10 right-5">
@@ -24,22 +33,33 @@ function TrilateralDiagram() {
       </div>
 
       <div
-        className="absolute inset-10 flex items-center justify-center border"
+        className="absolute inset-10 flex flex-col border"
         style={{ borderColor: 'oklch(0.25 0 0)' }}
       >
-        <pre
-          aria-label="Trilateral: Melchior, Balthasar, Casper"
-          className="magi-ascii select-none"
-          style={{ fontSize: '14px', lineHeight: 1.35, letterSpacing: '0.5px' }}
-        >{`                  ┌───────────┐                  
-                  │ MELCHIOR  │                  
-                  └─────┬─────┘                  
-                        │                        
-        ┌───────────────┴───────────────┐        
-        │                               │        
-  ┌─────┴─────┐                   ┌─────┴─────┐  
-  │ BALTHASAR │                   │  CASPER   │  
-  └───────────┘                   └───────────┘  `}</pre>
+        <div
+          className="flex shrink-0 items-center justify-between border-b px-4 py-2 text-[11px] uppercase tracking-[0.28em]"
+          style={{ borderColor: 'oklch(0.22 0 0)', color: MUTED }}
+        >
+          <span style={{ color: AMBER }}>&gt; TRILATERAL CORES</span>
+          <span>:: ONLINE</span>
+        </div>
+
+        <div className="flex min-h-0 flex-1">
+          <FlowCanvas
+            nodeNames={{
+              top: melchior,
+              'bottom-left': balthasar,
+              'bottom-right': casper,
+            }}
+          />
+        </div>
+
+        <div
+          className="shrink-0 border-t px-4 py-2 text-center text-[11px] uppercase tracking-[0.28em]"
+          style={{ borderColor: 'oklch(0.22 0 0)', color: MUTED }}
+        >
+          &gt; Three cores, one consensus
+        </div>
       </div>
     </div>
   )
@@ -147,7 +167,11 @@ function LandingPage() {
         </section>
 
         <section className="hidden lg:block">
-          <TrilateralDiagram />
+          <LandingFlowDiagram
+            melchior={melchior}
+            balthasar={balthasar}
+            casper={casper}
+          />
         </section>
       </main>
 

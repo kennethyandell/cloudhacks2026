@@ -11,6 +11,13 @@ type FlowCanvasProps = {
   selectedNode?: FlowNodeId | null
   activeNode?: FlowNodeId | null
   nodeTexts?: Partial<Record<FlowNodeId, NodeTextLines>>
+  /**
+   * Optional per-node display names used ONLY for the interior ASCII
+   * wordmark. When provided, takes precedence over `nodeTexts[id][0]`,
+   * letting callers drive the big block lettering without surfacing any
+   * exterior `> LABEL` columns. Used by the landing page's intro diagram.
+   */
+  nodeNames?: Partial<Record<FlowNodeId, string>>
   mini?: boolean
 }
 
@@ -146,6 +153,7 @@ export function FlowCanvas({
   selectedNode,
   activeNode,
   nodeTexts = {},
+  nodeNames = {},
   mini = false,
 }: FlowCanvasProps) {
   const [hoveredNode, setHoveredNode] = useState<FlowNodeId | null>(null)
@@ -154,12 +162,14 @@ export function FlowCanvas({
   const bottomLeftLines = nodeTexts["bottom-left"] ?? []
   const bottomRightLines = nodeTexts["bottom-right"] ?? []
 
-  // The first line in each node's text block is conventionally the agent's
-  // display name; that's what we render as the giant ASCII wordmark inside
-  // the shape.
-  const topName = topLines[0] ?? ""
-  const bottomLeftName = bottomLeftLines[0] ?? ""
-  const bottomRightName = bottomRightLines[0] ?? ""
+  // Interior ASCII wordmark prefers an explicit `nodeNames[id]` (landing
+  // page use case) and falls back to the first line of `nodeTexts[id]`
+  // (Configure + chat sidebar use the first line of the config as the
+  // agent's display name).
+  const topName = nodeNames["top"] ?? topLines[0] ?? ""
+  const bottomLeftName = nodeNames["bottom-left"] ?? bottomLeftLines[0] ?? ""
+  const bottomRightName =
+    nodeNames["bottom-right"] ?? bottomRightLines[0] ?? ""
 
   // Shared viewBox — the three shapes extend to all four frame edges so
   // main and mini render from the same coordinate system.
