@@ -38,8 +38,9 @@ function TextLines({
               width={width}
               height={lineHeight}
             >
-              <div className="flex h-full w-full items-center">
-                <span className="w-full truncate text-[14px] text-foreground font-sans">
+              <div className="flex h-full w-full items-center gap-2">
+                <span className="text-muted-foreground text-[14px]">&gt;</span>
+                <span className="w-full truncate text-[13px] uppercase tracking-[0.12em] text-foreground font-mono">
                   {text}
                 </span>
               </div>
@@ -50,7 +51,8 @@ function TextLines({
               x2={x + width}
               y2={lineY + lineHeight * 0.45}
               className="stroke-border"
-              strokeWidth="1.5"
+              strokeWidth="1"
+              strokeDasharray="2 3"
             />
           </g>
         )
@@ -80,8 +82,8 @@ export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = 
           y1="280"
           x2="460"
           y2="370"
-          className="stroke-foreground"
-          strokeWidth="6"
+          className="stroke-muted-foreground"
+          strokeWidth="2"
           strokeLinecap="round"
         />
         {/* Top to Bottom-Right */}
@@ -90,8 +92,8 @@ export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = 
           y1="280"
           x2="840"
           y2="370"
-          className="stroke-foreground"
-          strokeWidth="6"
+          className="stroke-muted-foreground"
+          strokeWidth="2"
           strokeLinecap="round"
         />
         {/* Bottom-Left to Bottom-Right */}
@@ -100,8 +102,8 @@ export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = 
           y1="490"
           x2="750"
           y2="490"
-          className="stroke-foreground"
-          strokeWidth="6"
+          className="stroke-muted-foreground"
+          strokeWidth="2"
           strokeLinecap="round"
         />
 
@@ -120,12 +122,12 @@ export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = 
             className={cn(
               "transition-all duration-200",
               activeNode === "top"
-                ? "fill-accent stroke-primary stroke-2 animate-pulse drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                ? "fill-accent stroke-primary stroke-2 animate-pulse drop-shadow-[0_0_10px_oklch(0.78_0.07_70/0.55)]"
                 : selectedNode === "top"
                   ? "fill-accent stroke-primary stroke-2"
                   : hoveredNode === "top"
-                    ? "fill-accent/80 stroke-muted-foreground/40 stroke-1"
-                    : "fill-muted stroke-transparent"
+                    ? "fill-accent/70 stroke-primary/50 stroke-1"
+                    : "fill-muted stroke-border stroke-1"
             )}
           />
         </g>
@@ -150,12 +152,12 @@ export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = 
             className={cn(
               "transition-all duration-200",
               activeNode === "bottom-left"
-                ? "fill-accent stroke-primary stroke-2 animate-pulse drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                ? "fill-accent stroke-primary stroke-2 animate-pulse drop-shadow-[0_0_10px_oklch(0.78_0.07_70/0.55)]"
                 : selectedNode === "bottom-left"
                   ? "fill-accent stroke-primary stroke-2"
                   : hoveredNode === "bottom-left"
-                    ? "fill-accent/80 stroke-muted-foreground/40 stroke-1"
-                    : "fill-muted stroke-transparent"
+                    ? "fill-accent/70 stroke-primary/50 stroke-1"
+                    : "fill-muted stroke-border stroke-1"
             )}
           />
         </g>
@@ -180,12 +182,12 @@ export function FlowCanvas({ onNodeClick, selectedNode, activeNode, nodeTexts = 
             className={cn(
               "transition-all duration-200",
               activeNode === "bottom-right"
-                ? "fill-accent stroke-primary stroke-2 animate-pulse drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                ? "fill-accent stroke-primary stroke-2 animate-pulse drop-shadow-[0_0_10px_oklch(0.78_0.07_70/0.55)]"
                 : selectedNode === "bottom-right"
                   ? "fill-accent stroke-primary stroke-2"
                   : hoveredNode === "bottom-right"
-                    ? "fill-accent/80 stroke-muted-foreground/40 stroke-1"
-                    : "fill-muted stroke-transparent"
+                    ? "fill-accent/70 stroke-primary/50 stroke-1"
+                    : "fill-muted stroke-border stroke-1"
             )}
           />
         </g>

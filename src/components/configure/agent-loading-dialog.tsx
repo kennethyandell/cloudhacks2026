@@ -81,7 +81,7 @@ export function AgentLoadingDialog({ open, status, onClose }: AgentLoadingDialog
         onEscapeKeyDown={(e) => { if (!isFailed) e.preventDefault() }}
       >
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="uppercase tracking-[0.18em] text-primary">
             {isReady ? "MAGI System Ready" : isFailed ? "Update Failed" : "Updating MAGI System"}
           </DialogTitle>
           <DialogDescription>
@@ -96,7 +96,7 @@ export function AgentLoadingDialog({ open, status, onClose }: AgentLoadingDialog
         <div className="flex flex-col items-center gap-4 py-4">
           {isUpdating && (
             <>
-              <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
               <p
                 className="text-center text-sm text-muted-foreground transition-opacity duration-300"
                 style={{ opacity: visible ? 1 : 0 }}

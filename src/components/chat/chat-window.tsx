@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react"
 import ReactMarkdown from "react-markdown"
-import { SendIcon, BotIcon, UserIcon } from "lucide-react"
+import { SendIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { SectionHeader, BootLine } from "@/components/magi/terminal"
 import { cn } from "@/lib/utils"
 
 /**
@@ -72,13 +73,6 @@ export function ChatWindow({
     e.preventDefault()
     if (!inputValue.trim()) return
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: inputValue,
-      timestamp: new Date(),
-    }
-
     onSendMessage?.(inputValue)
     setInputValue("")
   }
@@ -86,23 +80,32 @@ export function ChatWindow({
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-hidden bg-background">
       {/* Header */}
-      <div className="flex h-14 items-center border-b border-border/40 px-6 shrink-0">
-        <h2 className="text-lg font-semibold tracking-tight">Supervisor</h2>
+      <div className="flex h-14 items-center border-b border-border px-6 shrink-0">
+        <SectionHeader>Supervisor</SectionHeader>
       </div>
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-6 min-h-0" viewportRef={scrollRef}>
         <div className="flex flex-col gap-6">
           {messages.length === 0 ? (
-            <div className="flex h-full flex-1 flex-col items-center justify-center space-y-4 text-center">
-              <div className="rounded-full bg-muted p-4">
-                <BotIcon className="size-8 text-muted-foreground" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium">No messages yet</h3>
-                <p className="text-sm text-muted-foreground">
-                  Send a message to start interacting with the supervisor agent.
-                </p>
+            <div className="flex h-full flex-1 flex-col items-center justify-center">
+              <div className="w-full max-w-sm space-y-1">
+                <BootLine label="INIT MAGI.SYS" />
+                <BootLine label="LINK MELCHIOR-1" />
+                <BootLine label="LINK BALTHASAR-2" />
+                <BootLine label="LINK CASPER-3" />
+                <div className="flex items-baseline gap-2 pt-1 text-[13px] leading-6 text-muted-foreground">
+                  <span>&gt;</span>
+                  <span className="uppercase tracking-[0.12em]">
+                    AWAITING OPERATOR INPUT
+                  </span>
+                  <span
+                    aria-hidden
+                    className="ml-1 inline-block animate-pulse text-primary"
+                  >
+                    &#9612;
+                  </span>
+                </div>
               </div>
             </div>
           ) : (
@@ -114,19 +117,24 @@ export function ChatWindow({
                   msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
                 )}
               >
-                <Avatar className="size-8 shrink-0">
-                  <AvatarFallback className={cn(
-                    msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-accent"
-                  )}>
-                    {msg.role === "user" ? <UserIcon className="size-4" /> : <BotIcon className="size-4" />}
+                <Avatar className="size-8 shrink-0 rounded-none">
+                  <AvatarFallback
+                    className={cn(
+                      "rounded-none border text-[10px] font-mono tracking-[0.18em] uppercase",
+                      msg.role === "user"
+                        ? "border-primary/60 bg-primary/10 text-primary"
+                        : "border-border bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {msg.role === "user" ? "[U]" : "[S]"}
                   </AvatarFallback>
                 </Avatar>
                 <div
                   className={cn(
-                    "rounded-xl px-4 py-3 text-sm",
+                    "border px-4 py-3 text-sm",
                     msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground space-y-3 [&_p:not(:last-child)]:mb-3 [&_code]:rounded [&_code]:bg-background/50 [&_code]:px-1.5 [&_code]:py-0.5 [&_pre]:rounded-lg [&_pre]:bg-background/50 [&_pre]:p-4 [&_pre_code]:bg-transparent [&_pre_code]:p-0 break-words [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mt-1 [&_strong]:font-semibold"
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-border bg-muted/30 text-foreground space-y-3 [&_p:not(:last-child)]:mb-3 [&_code]:bg-background/60 [&_code]:border [&_code]:border-border [&_code]:px-1.5 [&_code]:py-0.5 [&_pre]:border [&_pre]:border-border [&_pre]:bg-background/60 [&_pre]:p-4 [&_pre_code]:bg-transparent [&_pre_code]:border-0 [&_pre_code]:p-0 break-words [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mt-1 [&_strong]:font-semibold"
                   )}
                 >
                   {msg.role === "supervisor" ? (
@@ -144,22 +152,28 @@ export function ChatWindow({
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 border-t border-border/40 shrink-0">
+      <div className="p-4 border-t border-border shrink-0">
         <form
           onSubmit={handleSubmit}
-          className="mx-auto flex max-w-3xl items-center gap-2 rounded-xl border border-input bg-transparent px-3 py-1.5 focus-within:ring-1 focus-within:ring-ring"
+          className="mx-auto flex max-w-3xl items-center gap-2 border border-border bg-transparent px-3 py-1.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/40"
         >
+          <span
+            aria-hidden
+            className="select-none text-primary text-sm tracking-[0.2em]"
+          >
+            &gt;
+          </span>
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Send a message to the supervisor..."
-            className="border-0 shadow-none focus-visible:ring-0 px-0 h-10"
+            placeholder="send a message to the supervisor..."
+            className="border-0 shadow-none focus-visible:ring-0 px-0 h-10 font-mono text-[13px] placeholder:uppercase placeholder:tracking-[0.12em] placeholder:text-muted-foreground"
           />
           <Button
             type="submit"
             size="icon"
             disabled={!inputValue.trim()}
-            className="size-8 shrink-0 rounded-lg"
+            className="size-8 shrink-0 rounded-none"
           >
             <SendIcon className="size-4" />
             <span className="sr-only">Send message</span>

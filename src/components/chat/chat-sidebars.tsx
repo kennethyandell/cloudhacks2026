@@ -3,7 +3,8 @@ import ReactMarkdown from "react-markdown"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { FlowCanvas, type FlowNodeId } from "@/components/configure/flow-canvas"
-import { MessageSquareIcon, ActivityIcon, PlusIcon } from "lucide-react"
+import { SectionHeader } from "@/components/magi/terminal"
+import { PlusIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { api } from "@/utils/api"
 import type { Message } from "@/components/chat/chat-window"
@@ -47,29 +48,54 @@ export function ChatLeftSidebar({
   }, [refreshKey])
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-border/40 bg-muted/20 min-h-0">
-      <div className="flex h-14 shrink-0 items-center justify-between px-4 border-b border-border/40">
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        <Button size="icon" variant="ghost" className="size-8 rounded-full" onClick={onNewChat} title="New Chat">
+    <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-sidebar min-h-0">
+      <div className="flex h-14 shrink-0 items-center justify-between px-4 border-b border-border">
+        <SectionHeader>{title}</SectionHeader>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="size-7 rounded-none text-muted-foreground hover:text-primary"
+          onClick={onNewChat}
+          title="New Chat"
+        >
           <PlusIcon className="size-4" />
         </Button>
       </div>
       <ScrollArea className="flex-1 min-h-0">
-        <div className="flex flex-col gap-1 p-3">
-          {previousChats.map((chat) => (
-            <Button
-              key={chat.id}
-              variant={activeChatId === chat.id ? "secondary" : "ghost"}
-              className="justify-start px-3 py-2 h-auto font-normal text-left"
-              onClick={() => onSelectChat?.(chat.id, chat.messages)}
-            >
-              <MessageSquareIcon className="mr-2 size-4 shrink-0 text-muted-foreground" />
-              <div className="flex flex-col gap-0.5 overflow-hidden">
-                <span className="truncate text-sm font-medium">{chat.title}</span>
-                <span className="text-xs text-muted-foreground">{chat.date}</span>
-              </div>
-            </Button>
-          ))}
+        <div className="flex flex-col p-2">
+          {previousChats.map((chat) => {
+            const isActive = activeChatId === chat.id
+            return (
+              <button
+                key={chat.id}
+                type="button"
+                onClick={() => onSelectChat?.(chat.id, chat.messages)}
+                className={cn(
+                  "group relative flex items-center gap-2 border-l-2 px-3 py-2 text-left text-[12px] transition-colors",
+                  isActive
+                    ? "border-primary bg-accent text-primary"
+                    : "border-transparent text-foreground hover:bg-muted/40 hover:text-primary"
+                )}
+              >
+                <span
+                  className={cn(
+                    "shrink-0 tracking-[0.2em]",
+                    isActive ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                  )}
+                >
+                  &gt;
+                </span>
+                <span className="flex-1 min-w-0 overflow-hidden">
+                  <span className="block truncate uppercase tracking-[0.08em]">
+                    {chat.title}
+                  </span>
+                  <span className="block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    {chat.date}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
         </div>
       </ScrollArea>
     </aside>
@@ -87,6 +113,12 @@ export type AgentThought = {
 type ChatRightSidebarProps = ChatSidebarProps & {
   activeNode?: FlowNodeId | null
   thoughts?: AgentThought[]
+}
+
+const AGENT_DOT_STYLE: Record<FlowNodeId, React.CSSProperties> = {
+  "top": { backgroundColor: "var(--agent-melchior)" },
+  "bottom-left": { backgroundColor: "var(--agent-balthasar)" },
+  "bottom-right": { backgroundColor: "var(--agent-casper)" },
 }
 
 export function ChatRightSidebar({
@@ -109,48 +141,48 @@ export function ChatRightSidebar({
   }
 
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-l border-border/40 bg-muted/10 min-h-0">
-      <div className="flex h-14 shrink-0 items-center px-4 border-b border-border/40">
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+    <aside className="flex w-80 shrink-0 flex-col border-l border-border bg-sidebar min-h-0">
+      <div className="flex h-14 shrink-0 items-center px-4 border-b border-border">
+        <SectionHeader>{title}</SectionHeader>
       </div>
       
       {/* Miniature Graph Top Section */}
-      <div className="h-48 shrink-0 border-b border-border/40 bg-background/50 relative">
-        <div className="absolute top-2 left-3 text-xs font-medium text-muted-foreground">
-          Architecture
+      <div className="h-48 shrink-0 border-b border-border bg-background/50 relative">
+        <div className="absolute top-2 left-3 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+          &gt; Architecture
         </div>
         <FlowCanvas mini activeNode={activeNode} />
       </div>
 
       {/* Agents' Thoughts Bottom Section */}
-      <div className="flex h-10 shrink-0 items-center px-4 border-b border-border/40 bg-muted/20">
-        <ActivityIcon className="mr-2 size-4 text-primary" />
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="flex h-10 shrink-0 items-center px-4 border-b border-border bg-muted/20">
+        <SectionHeader className="text-[11px] tracking-[0.22em]">
           Subagent Thoughts Stream
-        </h3>
+        </SectionHeader>
       </div>
       <ScrollArea className="flex-1 min-h-0">
         <div className="flex flex-col gap-4 p-4">
           {thoughts.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center italic mt-4">
-              Waiting for subagent activity...
+            <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground text-center mt-4">
+              &gt; waiting for subagent activity...
             </p>
           ) : (
             <>
               {thoughts.map((thought) => (
                 <div key={thought.id} className="flex flex-col gap-1.5 text-sm">
                   <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "size-2 rounded-full",
-                      thought.nodeId === "top" ? "bg-blue-500" :
-                      thought.nodeId === "bottom-left" ? "bg-purple-500" : "bg-emerald-500"
-                    )} />
-                    <span className="font-semibold text-foreground">{thought.agent}</span>
-                    <span className="text-xs text-muted-foreground ml-auto">
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={AGENT_DOT_STYLE[thought.nodeId]}
+                    />
+                    <span className="font-semibold uppercase tracking-[0.12em] text-foreground text-[12px]">
+                      {thought.agent}
+                    </span>
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground ml-auto tabular-nums">
                       {thought.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </span>
                   </div>
-                  <div className="rounded-lg border border-border/50 bg-background/50 p-2.5 text-muted-foreground space-y-2 [&>p]:mb-0 [&_p:last-child]:mb-0 [&_code]:rounded [&_code]:bg-muted/50 [&_code]:px-1 [&_code]:py-0.5 [&_pre]:rounded-md [&_pre]:bg-muted/50 [&_pre]:p-2 break-words">
+                  <div className="border border-border/60 bg-muted/10 p-2.5 text-muted-foreground text-[13px] space-y-2 [&>p]:mb-0 [&_p:last-child]:mb-0 [&_code]:bg-background/60 [&_code]:border [&_code]:border-border [&_code]:px-1 [&_code]:py-0.5 [&_pre]:bg-background/60 [&_pre]:border [&_pre]:border-border [&_pre]:p-2 break-words">
                     <ReactMarkdown>
                       {truncateMessage(thought.message, 40)}
                     </ReactMarkdown>

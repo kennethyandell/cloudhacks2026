@@ -1,6 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
+import { MagiBadge } from "@/components/magi/terminal"
 import { cn } from "@/lib/utils"
 
 const navItems = [
@@ -13,20 +12,24 @@ export function TopNav() {
   const currentPath = routerState.location.pathname
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background">
       <div className="flex h-14 items-center px-6">
-        {/* Logo / Avatar */}
-        <Link to="/" className="mr-4 flex items-center">
-          <Avatar size="sm">
-            <AvatarImage src="/favicon.svg" alt="Logo" />
-            <AvatarFallback>CH</AvatarFallback>
-          </Avatar>
+        {/* MAGI wordmark */}
+        <Link
+          to="/"
+          className="mr-6 flex items-center gap-2"
+          aria-label="MAGI home"
+        >
+          <MagiBadge />
         </Link>
 
-        <Separator orientation="vertical" className="mr-4 h-5" />
+        <span
+          aria-hidden
+          className="mr-4 h-4 w-px bg-border"
+        />
 
         {/* Navigation Links */}
-        <nav className="ml-auto flex items-center gap-1">
+        <nav className="ml-auto flex items-center gap-6">
           {navItems.map((item) => {
             const isActive = currentPath === item.to
 
@@ -35,16 +38,21 @@ export function TopNav() {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "relative px-4 py-1.5 text-sm font-medium transition-colors",
-                  "rounded-md hover:bg-accent hover:text-accent-foreground",
+                  "group relative flex items-center gap-2 px-1 py-1.5 text-[12px] uppercase tracking-[0.28em] transition-colors",
                   isActive
-                    ? "text-foreground"
-                    : "text-muted-foreground"
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-primary"
                 )}
               >
-                {item.label}
+                <span className="text-muted-foreground group-hover:text-primary">
+                  &gt;
+                </span>
+                <span>{item.label}</span>
                 {isActive && (
-                  <span className="absolute inset-x-1 -bottom-[calc(0.5rem+1px)] h-0.5 rounded-full bg-foreground" />
+                  <span
+                    aria-hidden
+                    className="absolute inset-x-0 -bottom-[calc(0.5rem+1px)] h-px bg-primary"
+                  />
                 )}
               </Link>
             )

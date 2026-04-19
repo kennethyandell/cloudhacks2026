@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { BootLine, CornerBracket } from '@/components/magi/terminal'
 
 export const Route = createFileRoute('/')({
   component: LandingPage,
@@ -11,53 +12,15 @@ const FG = 'oklch(0.92 0 0)'
 const MUTED = 'oklch(0.55 0 0)'
 const AMBER = 'oklch(0.78 0.07 70)'
 
-function BootLine({ label, status = 'OK' }: { label: string; status?: string }) {
-  return (
-    <div className="flex items-baseline gap-2 text-[13px] leading-6">
-      <span style={{ color: MUTED }}>&gt;</span>
-      <span className="uppercase tracking-[0.12em]" style={{ color: FG }}>
-        {label}
-      </span>
-      <span
-        aria-hidden
-        className="flex-1 translate-y-[-3px] border-b border-dotted"
-        style={{ borderColor: 'oklch(0.35 0 0)' }}
-      />
-      <span className="tracking-[0.2em]" style={{ color: AMBER }}>
-        [ {status} ]
-      </span>
-    </div>
-  )
-}
-
-function CornerBracket({
-  position,
-}: {
-  position: 'tl' | 'tr' | 'bl' | 'br'
-}) {
-  const base = 'absolute h-4 w-4'
-  const map: Record<typeof position, string> = {
-    tl: 'top-5 left-5 border-t border-l',
-    tr: 'top-5 right-5 border-t border-r',
-    bl: 'bottom-10 left-5 border-b border-l',
-    br: 'bottom-10 right-5 border-b border-r',
-  }
-  return (
-    <span
-      aria-hidden
-      className={`${base} ${map[position]}`}
-      style={{ borderColor: MUTED }}
-    />
-  )
-}
-
 function TrilateralDiagram() {
   return (
     <div className="relative h-full w-full">
-      <CornerBracket position="tl" />
-      <CornerBracket position="tr" />
-      <CornerBracket position="bl" />
-      <CornerBracket position="br" />
+      <div className="absolute top-5 left-5 bottom-10 right-5">
+        <CornerBracket position="tl" className="h-4 w-4" />
+        <CornerBracket position="tr" className="h-4 w-4" />
+        <CornerBracket position="bl" className="h-4 w-4" />
+        <CornerBracket position="br" className="h-4 w-4" />
+      </div>
 
       <div
         className="absolute inset-10 flex items-center justify-center border"
