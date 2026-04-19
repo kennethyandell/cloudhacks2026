@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
+import { GLYPH_HEIGHT, toAsciiBlock } from "@/utils/ascii-block"
 
 export type FlowNodeId = "top" | "bottom-left" | "bottom-right"
 
@@ -11,6 +12,82 @@ type FlowCanvasProps = {
   activeNode?: FlowNodeId | null
   nodeTexts?: Partial<Record<FlowNodeId, NodeTextLines>>
   mini?: boolean
+}
+
+/**
+ * Renders a MAGI-style ASCII wordmark of `name` inside the supplied SVG-
+ * coordinate rectangle.
+ *
+ * Implementation: we expand the name into a 5-row block grid, then render one
+ * `<rect>` per filled cell into a nested `<svg>` whose viewBox matches the
+ * grid dimensions (cols x 5). The outer svg uses
+ * `preserveAspectRatio="xMidYMid meet"`, so the whole wordmark scales
+ * uniformly to fit the safe zone while staying perfectly centered. Short
+ * names (e.g. "CASPER") render huge; long names (e.g. "BALTHASAR") shrink
+ * down, always without clipping or font-metric guesswork.
+ */
+function InteriorAsciiName({
+  name,
+  x,
+  y,
+  width,
+  height,
+  padding = 0.04,
+}: {
+  name: string
+  x: number
+  y: number
+  width: number
+  height: number
+  padding?: number
+}) {
+  const cleaned = name.trim().toUpperCase().slice(0, 16)
+
+  const { cols, rects } = useMemo(() => {
+    if (!cleaned) return { cols: 0, rects: [] as Array<[number, number]> }
+    const rows = toAsciiBlock(cleaned).split("\n")
+    const filled: Array<[number, number]> = []
+    rows.forEach((row, r) => {
+      for (let c = 0; c < row.length; c++) {
+        if (row[c] === "█") filled.push([c, r])
+      }
+    })
+    return { cols: rows[0]?.length ?? 0, rects: filled }
+  }, [cleaned])
+
+  if (!cleaned || cols === 0) return null
+
+  const padX = width * padding
+  const padY = height * padding
+  const innerX = x + padX
+  const innerY = y + padY
+  const innerW = Math.max(1, width - padX * 2)
+  const innerH = Math.max(1, height - padY * 2)
+
+  return (
+    <svg
+      x={innerX}
+      y={innerY}
+      width={innerW}
+      height={innerH}
+      viewBox={`0 0 ${cols} ${GLYPH_HEIGHT}`}
+      preserveAspectRatio="xMidYMid meet"
+      pointerEvents="none"
+      shapeRendering="crispEdges"
+    >
+      <title>{cleaned}</title>
+      {rects.map(([cx, cy]) => (
+        <rect
+          key={`${cx}-${cy}`}
+          x={cx}
+          y={cy}
+          width={1}
+          height={1}
+          className="fill-primary"
+        />
+      ))}
+    </svg>
+  )
 }
 
 /**
@@ -76,6 +153,13 @@ export function FlowCanvas({
   const topLines = nodeTexts["top"] ?? []
   const bottomLeftLines = nodeTexts["bottom-left"] ?? []
   const bottomRightLines = nodeTexts["bottom-right"] ?? []
+
+  // The first line in each node's text block is conventionally the agent's
+  // display name; that's what we render as the giant ASCII wordmark inside
+  // the shape.
+  const topName = topLines[0] ?? ""
+  const bottomLeftName = bottomLeftLines[0] ?? ""
+  const bottomRightName = bottomRightLines[0] ?? ""
 
   // Shared viewBox — the three shapes extend to all four frame edges so
   // main and mini render from the same coordinate system.
@@ -157,6 +241,16 @@ export function FlowCanvas({
         </g>
 
         {!mini && (
+          <InteriorAsciiName
+            name={topName}
+            x={505}
+            y={95}
+            width={350}
+            height={180}
+          />
+        )}
+
+        {!mini && (
           <ExteriorTextLines
             lines={topLines}
             x={900}
@@ -194,6 +288,16 @@ export function FlowCanvas({
         </g>
 
         {!mini && (
+          <InteriorAsciiName
+            name={bottomLeftName}
+            x={185}
+            y={530}
+            width={290}
+            height={185}
+          />
+        )}
+
+        {!mini && (
           <ExteriorTextLines
             lines={bottomLeftLines}
             x={20}
@@ -229,6 +333,16 @@ export function FlowCanvas({
             )}
           />
         </g>
+
+        {!mini && (
+          <InteriorAsciiName
+            name={bottomRightName}
+            x={865}
+            y={530}
+            width={290}
+            height={185}
+          />
+        )}
 
         {!mini && (
           <ExteriorTextLines
