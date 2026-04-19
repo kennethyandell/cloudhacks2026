@@ -1,5 +1,5 @@
 import type { IconType } from "react-icons"
-import { SiOpenai, SiMeta, SiAnthropic } from "react-icons/si"
+import { SiAnthropic } from "react-icons/si"
 import { CloudIcon } from "lucide-react"
 
 // Wrapper to make LucideIcon compatible with IconType usage in JSX
@@ -46,28 +46,29 @@ export const BEDROCK_MODELS: BedrockModel[] = [
     icon: AmazonIcon,
   },
   {
-    id: "us.meta.llama3-2-90b-instruct-v1:0",
-    name: "Llama 3.2 90B",
-    provider: "Meta",
-    icon: SiMeta,
+    id: "us.amazon.nova-micro-v1:0",
+    name: "Nova Micro",
+    provider: "Amazon",
+    icon: AmazonIcon,
   },
   {
-    id: "us.meta.llama3-2-11b-instruct-v1:0",
-    name: "Llama 3.2 11B",
-    provider: "Meta",
-    icon: SiMeta,
+    id: "amazon.titan-text-premier-v1:0",
+    name: "Titan Premier",
+    provider: "Amazon",
+    icon: AmazonIcon,
+  },
+
+  {
+    id: "mistral.mistral-large-2407-v1:0",
+    name: "Mistral Large 2",
+    provider: "Mistral",
+    icon: AmazonIcon,
   },
   {
-    id: "gpt-4o",
-    name: "GPT-4o",
-    provider: "OpenAI",
-    icon: SiOpenai,
-  },
-  {
-    id: "gpt-4o-mini",
-    name: "GPT-4o Mini",
-    provider: "OpenAI",
-    icon: SiOpenai,
+    id: "cohere.command-r-plus-v1:0",
+    name: "Command R+",
+    provider: "Cohere",
+    icon: AmazonIcon,
   },
 ]
 
