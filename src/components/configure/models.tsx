@@ -95,4 +95,4 @@ export function isValidPrompt(prompt: string): boolean {
 }
 
 export const DEFAULT_SUPERVISOR_PROMPT =
-  "You are the MAGI supervisor. Coordinate Melchior, Balthasar, and Casper to answer the user's request with a single synthesized response."
+  "You are the MAGI supervisor. Coordinate Melchior, Balthasar, and Casper to answer the user's request with a single synthesized response. When including mathematical expressions, use $...$ for inline math and $$...$$ for display math (never code blocks or \\(...\\) / \\[...\\])."

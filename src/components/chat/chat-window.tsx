@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react"
 import ReactMarkdown from "react-markdown"
+import remarkMath from "remark-math"
+import rehypeKatex from "rehype-katex"
 import { SendIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { SectionHeader, BootLine } from "@/components/magi/terminal"
 import { DEFAULT_AGENT_NAMES, type AgentNames } from "@/utils/use-agent-names"
 import { cn } from "@/lib/utils"
+import { normalizeLatex } from "@/utils/latex"
 
 /**
  * Mistral models sometimes wrap supervisor responses in a JSON tool-call
@@ -17,30 +20,44 @@ import { cn } from "@/lib/utils"
  * if parsing fails or the shape is unexpected.
  */
 function parseMessageContent(raw: string): string {
-  try {
-    // The model streams literal newline/tab/CR characters inside JSON string
-    // values. JSON.parse rejects those, so escape them first.
-    const sanitized = raw
-      .replace(/\\/g, '\\\\')   // escape existing backslashes first
-      .replace(/\n/g, '\\n')
-      .replace(/\r/g, '\\r')
-      .replace(/\t/g, '\\t')
-    const parsed = JSON.parse(sanitized)
-
-    // Pattern 1: Array of tool-call objects
-    if (Array.isArray(parsed)) {
-      const texts = parsed
-        .map((item: any) => item?.arguments?.content ?? item?.content)
-        .filter(Boolean)
-      if (texts.length > 0) return texts.join("\n\n")
-    }
-
-    // Pattern 2: Single tool-call object
-    if (parsed?.arguments?.content) return parsed.arguments.content
-    if (typeof parsed?.content === "string") return parsed.content
-  } catch {
-    // Not JSON — return as-is
+  const tryParse = (s: string): unknown => {
+    try { return JSON.parse(s) } catch { return undefined }
   }
+
+  // 1. Try the raw envelope as-is. Well-formed JSON (Mistral/Nova tool calls
+  //    with properly escaped \\frac etc.) parses cleanly here and preserves
+  //    the single backslashes LaTeX needs.
+  let parsed = tryParse(raw)
+
+  // 2. If that fails, the model likely streamed bare control characters
+  //    inside JSON strings. Escape ONLY those — never backslashes, so
+  //    already-correct \\frac / \\int escapes survive intact.
+  if (parsed === undefined) {
+    const repaired = raw
+      .replace(/\n/g, "\\n")
+      .replace(/\r/g, "\\r")
+      .replace(/\t/g, "\\t")
+    parsed = tryParse(repaired)
+  }
+
+  if (parsed === undefined) return raw
+
+  // Pattern 1: Array of tool-call objects
+  if (Array.isArray(parsed)) {
+    const texts = parsed
+      .map((item: any) => item?.arguments?.content ?? item?.content)
+      .filter((x): x is string => typeof x === "string" && x.length > 0)
+    if (texts.length > 0) return texts.join("\n\n")
+  }
+
+  // Pattern 2: Single tool-call object
+  if (typeof (parsed as any)?.arguments?.content === "string") {
+    return (parsed as any).arguments.content
+  }
+  if (typeof (parsed as any)?.content === "string") {
+    return (parsed as any).content
+  }
+
   return raw
 }
 
@@ -141,8 +158,11 @@ export function ChatWindow({
                   )}
                 >
                   {msg.role === "supervisor" ? (
-                    <ReactMarkdown>
-                      {parseMessageContent(msg.content)}
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                    >
+                      {normalizeLatex(parseMessageContent(msg.content))}
                     </ReactMarkdown>
                   ) : (
                     <p className="whitespace-pre-wrap">{msg.content}</p>

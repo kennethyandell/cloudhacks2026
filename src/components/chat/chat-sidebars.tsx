@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef, type ReactNode } from "react"
 import ReactMarkdown from "react-markdown"
+import remarkMath from "remark-math"
+import rehypeKatex from "rehype-katex"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { FlowCanvas, type FlowNodeId } from "@/components/configure/flow-canvas"
@@ -7,6 +9,7 @@ import { SectionHeader } from "@/components/magi/terminal"
 import { PlusIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { api } from "@/utils/api"
+import { normalizeLatex } from "@/utils/latex"
 import type { Message } from "@/components/chat/chat-window"
 
 type ChatSidebarProps = {
@@ -187,8 +190,11 @@ export function ChatRightSidebar({
                     </span>
                   </div>
                   <div className="border border-border/60 bg-muted/10 p-2.5 text-muted-foreground text-[13px] space-y-2 [&>p]:mb-0 [&_p:last-child]:mb-0 [&_code]:bg-background/60 [&_code]:border [&_code]:border-border [&_code]:px-1 [&_code]:py-0.5 [&_pre]:bg-background/60 [&_pre]:border [&_pre]:border-border [&_pre]:p-2 break-words">
-                    <ReactMarkdown>
-                      {truncateMessage(thought.message, 40)}
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                    >
+                      {normalizeLatex(truncateMessage(thought.message, 40))}
                     </ReactMarkdown>
                   </div>
                 </div>
