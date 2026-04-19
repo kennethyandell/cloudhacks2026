@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/field"
 import {
   BEDROCK_MODELS,
+  MIN_PROMPT_LENGTH,
+  isValidPrompt,
   type SubagentConfig,
   getDefaultSubagentConfig,
 } from "./models"
@@ -55,6 +57,11 @@ export function SubagentForm({
   )
 
   const selectedModel = BEDROCK_MODELS.find((m) => m.id === config.modelId)
+
+  const promptLength = config.prompt.trim().length
+  const promptValid = isValidPrompt(config.prompt)
+  const nameValid = config.name.trim().length > 0
+  const canSave = promptValid && nameValid
 
   return (
     <FieldGroup>
@@ -113,7 +120,8 @@ export function SubagentForm({
       <Field>
         <FieldLabel htmlFor={`prompt-${nodeId}`}>System Prompt</FieldLabel>
         <FieldDescription>
-          Instructions that define this subagent's behavior.
+          Instructions that define this subagent's behavior. Must be at least{" "}
+          {MIN_PROMPT_LENGTH} characters.
         </FieldDescription>
         <Textarea
           id={`prompt-${nodeId}`}
@@ -124,10 +132,18 @@ export function SubagentForm({
             setConfig((prev) => ({ ...prev, prompt: e.target.value }))
           }
         />
+        <p
+          className={
+            "text-xs tabular-nums " +
+            (promptValid ? "text-muted-foreground" : "text-destructive")
+          }
+        >
+          {promptLength}/{MIN_PROMPT_LENGTH} minimum
+        </p>
       </Field>
 
       {/* Save Button */}
-      <Button onClick={handleSave} className="w-full">
+      <Button onClick={handleSave} disabled={!canSave} className="w-full">
         <SaveIcon data-icon="inline-start" />
         Save Configuration
       </Button>

@@ -15,6 +15,11 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       }).then((res) => res.json()),
+    status: (userId: string) =>
+      fetch(`${BASE}presets/status?userId=${userId}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }).then((res) => res.json()),
     delete: (userId: string, id: string) =>
       fetch(`${BASE}presets`, {
         method: "DELETE",

@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-agent": "latest",
+    "@aws-sdk/client-dynamodb": "latest",
+    "@aws-sdk/lib-dynamodb": "latest",
+    "@aws-sdk/client-lambda": "latest"
+  }
+}

@@ -1,12 +1,13 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { ConfigureSidebarProvider } from '@/components/configure/sidebar-context'
 import { ConfigureSidebar } from '@/components/configure/configure-sidebar'
 import { FlowCanvas, type FlowNodeId } from '@/components/configure/flow-canvas'
 import { useConfigureSidebar } from '@/components/configure/sidebar-context'
 import { SubagentForm } from '@/components/configure/subagent-form'
-import { type SubagentConfig, BEDROCK_MODELS } from '@/components/configure/models'
+import { type SubagentConfig, BEDROCK_MODELS, DEFAULT_SUPERVISOR_PROMPT } from '@/components/configure/models'
 import { PresetManager } from '@/components/configure/preset-manager'
+import { AgentLoadingDialog } from '@/components/configure/agent-loading-dialog'
 import { api } from '@/utils/api'
 import { NODE_TO_AGENT } from '@/lib/constants'
 
@@ -25,6 +26,8 @@ function ConfigurePage() {
   )
 }
 
+type AgentUpdateStatus = "idle" | "updating" | "ready" | "failed"
+
 function ConfigureContent() {
   const [selectedNode, setSelectedNode] = useState<FlowNodeId | null>(null)
   const { setPage, clearPage } = useConfigureSidebar()
@@ -36,6 +39,32 @@ function ConfigureContent() {
     "bottom-right": { name: "", modelId: BEDROCK_MODELS[0].id, prompt: "" },
   })
 
+  const [updateStatus, setUpdateStatus] = useState<AgentUpdateStatus>("idle")
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Stop polling when component unmounts
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [])
+
+  function startPolling() {
+    if (pollRef.current) return
+    pollRef.current = setInterval(async () => {
+      try {
+        const { status } = await api.presets.status("default-user")
+        if (status === "ready" || status === "failed") {
+          clearInterval(pollRef.current!)
+          pollRef.current = null
+          setUpdateStatus(status)
+        }
+      } catch (err) {
+        console.error("Failed to poll preset status", err)
+      }
+    }, 4000)
+  }
+
   const nodeLabels: Record<FlowNodeId, string> = {
     "top": "Subagent A",
     "bottom-left": "Subagent B",
@@ -44,20 +73,7 @@ function ConfigureContent() {
 
   const handleSave = useCallback(
     (nodeId: FlowNodeId, config: SubagentConfig) => {
-      setConfigs((prev) => {
-        const next = { ...prev, [nodeId]: config }
-        
-        api.presets.save({
-          userId: "default-user",
-          name: "Current Preset",
-          melchior: { prompt: next["top"].prompt, model: next["top"].modelId },
-          balthasar: { prompt: next["bottom-left"].prompt, model: next["bottom-left"].modelId },
-          casper: { prompt: next["bottom-right"].prompt, model: next["bottom-right"].modelId },
-          supervisor: { prompt: "Default supervisor prompt" }
-        }).catch(err => console.error("Failed to save preset", err))
-
-        return next
-      })
+      setConfigs((prev) => ({ ...prev, [nodeId]: config }))
     },
     []
   )
@@ -76,10 +92,46 @@ function ConfigureContent() {
     }).catch(err => console.error("Failed to load presets", err))
   }, [])
 
-  const handleApplyPreset = useCallback((presetConfigs: Record<FlowNodeId, SubagentConfig>) => {
-    setConfigs(presetConfigs)
-    setSelectedNode(null)
-  }, [])
+  const handleApplyPreset = useCallback(
+    async (
+      presetConfigs: Record<FlowNodeId, SubagentConfig>,
+      meta?: { name: string }
+    ) => {
+      setConfigs(presetConfigs)
+      setSelectedNode(null)
+      setUpdateStatus("updating")
+
+      try {
+        const res = await api.presets.save({
+          userId: "default-user",
+          name: meta?.name || "Applied Preset",
+          melchior: {
+            prompt: presetConfigs["top"].prompt,
+            model: presetConfigs["top"].modelId,
+          },
+          balthasar: {
+            prompt: presetConfigs["bottom-left"].prompt,
+            model: presetConfigs["bottom-left"].modelId,
+          },
+          casper: {
+            prompt: presetConfigs["bottom-right"].prompt,
+            model: presetConfigs["bottom-right"].modelId,
+          },
+          supervisor: { prompt: DEFAULT_SUPERVISOR_PROMPT },
+        })
+
+        if (res.status === "updating") {
+          startPolling()
+        } else {
+          setUpdateStatus("failed")
+        }
+      } catch (err) {
+        console.error("Failed to apply preset", err)
+        setUpdateStatus("failed")
+      }
+    },
+    []
+  )
 
   // Mount PresetManager in sidebar when no node is selected
   useEffect(() => {
@@ -91,11 +143,12 @@ function ConfigureContent() {
           <PresetManager 
             currentConfigs={configs}
             onApplyPreset={handleApplyPreset}
+            isApplying={updateStatus === "updating"}
           />
         )
       })
     }
-  }, [selectedNode, configs, setPage, handleApplyPreset])
+  }, [selectedNode, configs, setPage, handleApplyPreset, updateStatus])
 
   function handleNodeClick(nodeId: FlowNodeId) {
     if (selectedNode === nodeId) {
@@ -133,10 +186,17 @@ function ConfigureContent() {
   ) as Record<FlowNodeId, string[]>
 
   return (
-    <FlowCanvas
-      selectedNode={selectedNode}
-      onNodeClick={handleNodeClick}
-      nodeTexts={nodeTexts}
-    />
+    <>
+      <FlowCanvas
+        selectedNode={selectedNode}
+        onNodeClick={handleNodeClick}
+        nodeTexts={nodeTexts}
+      />
+      <AgentLoadingDialog
+        open={updateStatus !== "idle"}
+        status={updateStatus}
+        onClose={() => setUpdateStatus("idle")}
+      />
+    </>
   )
 }
