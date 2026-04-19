@@ -4,7 +4,7 @@
 
 MAGI is a multi-agent chat app inspired by the decision system of the same name from *Neon Genesis Evangelion*. Every user prompt is forwarded to a supervisor AWS Bedrock Agent that fans the request out to three collaborator sub-agents (sub-agent 1, sub-agent 2, and sub-agent 3), each running its own foundation model and system prompt. The supervisor streams a single synthesized answer back to the browser while the UI simultaneously surfaces each sub-agent's chain-of-thought as it arrives.
 
-The frontend is a Vite + React 19 SPA. The backend is a single Node.js Lambda (`crud-db`) that persists presets / chats / display names in DynamoDB and asynchronously rebuilds the Bedrock agents whenever a new configuration is applied.
+The frontend is a Vite + React 19 SPA. The backend is consists of a Node.js Lambda (`crud-db`) function that persists presets / chats / display names in DynamoDB and asynchronously rebuilds the Bedrock agents whenever a new configuration is applied. It also consists of a Node.js Lambda (`chat-stream`) function that is in charge of not only sending chat messages from the user and chatbot, but also showing the thoughts of the subagents.
 
 Built for **CloudHacks 2026** by Kenneth Yandell, Brian Lien, and Timmy Phan.
 
