@@ -55,28 +55,62 @@ function ChatPage() {
         )
       },
       (trace) => {
-        // Parse trace
-        const rationale = trace?.orchestrationTrace?.rationale || trace?.rationale || ""
-        const agentArn = trace?.orchestrationTrace?.invocationInput?.agentAliasArn || trace?.agentAliasArn || trace?.agentName || ""
-        
-        let nodeId: FlowNodeId | null = null
-        let agentName = "Unknown Agent"
+        // Debug: log full trace to verify Bedrock TracePart shape
+        console.log("TRACE:", JSON.stringify(trace, null, 2))
 
-        if (agentArn.includes("melchior")) { nodeId = "top"; agentName = "Subagent A (Orchestrator)" }
-        else if (agentArn.includes("balthasar")) { nodeId = "bottom-left"; agentName = "Subagent B (Researcher)" }
-        else if (agentArn.includes("casper")) { nodeId = "bottom-right"; agentName = "Subagent C (Writer)" }
-        else { nodeId = "top"; agentName = "Supervisor" }
+        // Only show sub-agent thoughts — skip supervisor traces entirely.
+        // TracePart.collaboratorName is set when the trace originates from a sub-agent.
+        const collaboratorName: string = trace?.collaboratorName || ""
+        if (!collaboratorName) return
+
+        // TracePart wraps an inner .trace object that contains orchestrationTrace
+        const orchestration = trace?.trace?.orchestrationTrace
+        if (!orchestration) return // skip non-orchestration traces
+
+        // 1. rationale.text — the agent's chain-of-thought (only some models emit this)
+        const rationaleText: string = orchestration?.rationale?.text || ""
+
+        // 2. Sub-agent's final answer (observation.finalResponse.text)
+        const finalResponseText: string =
+          orchestration?.observation?.finalResponse?.text || ""
+
+        // 3. Try to extract reasoning from modelInvocationOutput.rawResponse.content
+        //    Some models (e.g. GPT) embed reasoningContent in the raw response
+        let modelReasoningText = ""
+        try {
+          const rawContent = orchestration?.modelInvocationOutput?.rawResponse?.content
+          if (rawContent) {
+            const parsed = JSON.parse(rawContent)
+            const contentArr = parsed?.output?.message?.content || []
+            for (const item of contentArr) {
+              if (item?.reasoningContent?.reasoningText?.text) {
+                modelReasoningText = item.reasoningContent.reasoningText.text
+                break
+              }
+            }
+          }
+        } catch { /* ignore parse errors */ }
+
+        // Priority: rationale > model reasoning > final response
+        const message = rationaleText || modelReasoningText || finalResponseText
+        if (!message) return // no meaningful content — skip
+
+        // Map Bedrock collaborator names to display names and flow canvas nodes
+        let nodeId: FlowNodeId = "top"
+        let agentName = collaboratorName
+
+        if (collaboratorName === "collaborator-1")      { nodeId = "top";          agentName = "Melchior" }
+        else if (collaboratorName === "collaborator-2") { nodeId = "bottom-left";  agentName = "Balthasar" }
+        else if (collaboratorName === "collaborator-3") { nodeId = "bottom-right"; agentName = "Casper" }
 
         setActiveNode(nodeId)
-        if (rationale || agentName) {
-           setThoughts(prev => [...prev, {
-             id: Date.now().toString() + Math.random(),
-             agent: agentName,
-             nodeId: nodeId || "top",
-             message: rationale || `Agent active: ${agentName}`,
-             timestamp: new Date()
-           }])
-        }
+        setThoughts(prev => [...prev, {
+          id: Date.now().toString() + Math.random(),
+          agent: agentName,
+          nodeId,
+          message,
+          timestamp: new Date()
+        }])
       },
       () => {
         setActiveNode(null)
