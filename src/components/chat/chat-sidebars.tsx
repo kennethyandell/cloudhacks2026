@@ -18,13 +18,15 @@ type ChatLeftSidebarProps = ChatSidebarProps & {
   activeChatId?: string
   onSelectChat?: (id: string, messages?: Message[]) => void
   onNewChat?: () => void
+  refreshKey?: number
 }
 
 export function ChatLeftSidebar({ 
   title = "Previous Chats",
   activeChatId = "new",
   onSelectChat,
-  onNewChat
+  onNewChat,
+  refreshKey = 0,
 }: ChatLeftSidebarProps) {
   const [previousChats, setPreviousChats] = useState<{ id: string, title: string, date: string, messages?: Message[] }[]>([])
 
@@ -42,7 +44,7 @@ export function ChatLeftSidebar({
       })
       setPreviousChats(formatted)
     }).catch(err => console.error("Failed to load chats", err))
-  }, [])
+  }, [refreshKey])
 
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-border/40 bg-muted/20 min-h-0">

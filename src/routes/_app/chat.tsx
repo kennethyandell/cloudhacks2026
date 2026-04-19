@@ -16,6 +16,7 @@ function ChatPage() {
   const [activeChatId, setActiveChatId] = useState<string>("new")
   const [messages, setMessages] = useState<Message[]>([])
   const messagesRef = useRef<Message[]>([])
+  const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0)
 
   const updateMessages = (newMessages: Message[]) => {
     setMessages(newMessages)
@@ -24,6 +25,14 @@ function ChatPage() {
 
   const handleSendMessage = useCallback(async (text: string) => {
     setThoughts([])
+
+    // Lock in a stable chatId for the lifetime of this conversation.
+    // Once set, all subsequent saves reuse the same ID.
+    let chatId = activeChatId
+    if (chatId === "new") {
+      chatId = `chat-${Date.now()}`
+      setActiveChatId(chatId)
+    }
     
     // 1. Add user message
     const userMsg: Message = {
@@ -121,10 +130,12 @@ function ChatPage() {
 
         api.chats.save({
           userId: "default-user",
-          chatId: activeChatId === "new" ? `chat-${Date.now()}` : activeChatId,
+          chatId: chatId,
           title: title,
           messages: currentMessages,
-        }).catch(err => console.error("Failed to save chat", err))
+        })
+          .then(() => setSidebarRefreshKey(k => k + 1))
+          .catch(err => console.error("Failed to save chat", err))
       },
       (err) => console.error("Magi error:", err),
     )
@@ -149,6 +160,7 @@ function ChatPage() {
         activeChatId={activeChatId}
         onSelectChat={handleSelectChat}
         onNewChat={handleNewChat}
+        refreshKey={sidebarRefreshKey}
       />
 
       <div className="flex flex-1 flex-col border-r border-border/40 relative min-h-0">
