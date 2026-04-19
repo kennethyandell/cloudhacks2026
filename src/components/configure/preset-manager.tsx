@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -41,6 +43,10 @@ const NODE_LABELS: Record<FlowNodeId, string> = {
 export function PresetManager({ currentConfigs, onApplyPreset, isApplying = false }: PresetManagerProps) {
   const [presets, setPresets] = useState<Preset[]>([])
   const [selectedPresetId, setSelectedPresetId] = useState<string>("")
+  const selectedPreset = presets.find((p) => p.id === selectedPresetId)
+  const isReadonly = !!selectedPreset?.isDefault
+  const defaultPresets = presets.filter((p) => p.isDefault)
+  const userPresets = presets.filter((p) => !p.isDefault)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -139,9 +145,24 @@ export function PresetManager({ currentConfigs, onApplyPreset, isApplying = fals
               {presets.length === 0 ? (
                 <SelectItem value="none" disabled>No presets found</SelectItem>
               ) : (
-                presets.map(p => (
-                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                ))
+                <>
+                  {defaultPresets.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel>Default Presets</SelectLabel>
+                      {defaultPresets.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                  {userPresets.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel>Your Presets</SelectLabel>
+                      {userPresets.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                </>
               )}
             </SelectContent>
           </Select>
@@ -202,9 +223,9 @@ export function PresetManager({ currentConfigs, onApplyPreset, isApplying = fals
         <Button 
           variant="destructive" 
           size="icon"
-          disabled={!selectedPresetId || selectedPresetId === "none" || isDeleting || isApplying}
+          disabled={!selectedPresetId || selectedPresetId === "none" || isDeleting || isApplying || isReadonly}
           onClick={handleDeletePreset}
-          title="Delete selected preset"
+          title={isReadonly ? "Default presets cannot be deleted" : "Delete selected preset"}
         >
           {isDeleting ? <Loader2Icon className="size-4 animate-spin" /> : <TrashIcon className="size-4" />}
         </Button>
