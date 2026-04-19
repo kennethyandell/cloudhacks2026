@@ -6,6 +6,41 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 
+/**
+ * Mistral models sometimes wrap supervisor responses in a JSON tool-call
+ * structure like:
+ *   [{"name":"AgentCommunication.__sendMessage","arguments":{"recipient":"User","content":"..."}}]
+ * This helper extracts the actual text. Falls back to the original string
+ * if parsing fails or the shape is unexpected.
+ */
+function parseMessageContent(raw: string): string {
+  try {
+    // The model streams literal newline/tab/CR characters inside JSON string
+    // values. JSON.parse rejects those, so escape them first.
+    const sanitized = raw
+      .replace(/\\/g, '\\\\')   // escape existing backslashes first
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t')
+    const parsed = JSON.parse(sanitized)
+
+    // Pattern 1: Array of tool-call objects
+    if (Array.isArray(parsed)) {
+      const texts = parsed
+        .map((item: any) => item?.arguments?.content ?? item?.content)
+        .filter(Boolean)
+      if (texts.length > 0) return texts.join("\n\n")
+    }
+
+    // Pattern 2: Single tool-call object
+    if (parsed?.arguments?.content) return parsed.arguments.content
+    if (typeof parsed?.content === "string") return parsed.content
+  } catch {
+    // Not JSON — return as-is
+  }
+  return raw
+}
+
 export type Message = {
   id: string
   role: "user" | "supervisor"
@@ -93,7 +128,9 @@ export function ChatWindow({
                       : "bg-muted text-foreground"
                   )}
                 >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <p className="whitespace-pre-wrap">
+                    {msg.role === "supervisor" ? parseMessageContent(msg.content) : msg.content}
+                  </p>
                 </div>
               </div>
             ))
