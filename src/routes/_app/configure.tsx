@@ -30,7 +30,7 @@ type AgentUpdateStatus = "idle" | "updating" | "ready" | "failed"
 
 function ConfigureContent() {
   const [selectedNode, setSelectedNode] = useState<FlowNodeId | null>(null)
-  const { setPage, clearPage } = useConfigureSidebar()
+  const { setPage } = useConfigureSidebar()
   const { names: agentNames, setNames: setAgentNames } = useAgentNamesContext()
 
   // Store configs per node so edits persist across selections

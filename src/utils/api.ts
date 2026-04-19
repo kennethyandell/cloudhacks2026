@@ -11,7 +11,7 @@ export type AgentNamesResponse = {
 
 export const api = {
   presets: {
-    list: (userId: string) =>
+    list: (_userId: string) =>
       fetch(`${BASE}presets`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -35,7 +35,7 @@ export const api = {
       }).then((res) => res.json()),
   },
   chats: {
-    list: (userId: string) =>
+    list: (_userId: string) =>
       fetch(`${BASE}chats`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
