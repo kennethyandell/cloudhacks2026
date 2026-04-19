@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useState, useRef, type ReactNode } from "react"
+import ReactMarkdown from "react-markdown"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { FlowCanvas, type FlowNodeId } from "@/components/configure/flow-canvas"
 import { MessageSquareIcon, ActivityIcon, PlusIcon } from "lucide-react"
@@ -94,6 +94,20 @@ export function ChatRightSidebar({
   activeNode,
   thoughts = [],
 }: ChatRightSidebarProps) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: "smooth" })
+    }
+  }, [thoughts])
+
+  const truncateMessage = (msg: string, wordCount: number) => {
+    const words = msg.split(/\s+/)
+    if (words.length <= wordCount) return msg
+    return words.slice(0, wordCount).join(' ') + '...'
+  }
+
   return (
     <aside className="flex w-80 shrink-0 flex-col border-l border-border/40 bg-muted/10 min-h-0">
       <div className="flex h-14 shrink-0 items-center px-4 border-b border-border/40">
@@ -122,24 +136,29 @@ export function ChatRightSidebar({
               Waiting for subagent activity...
             </p>
           ) : (
-            thoughts.map((thought) => (
-              <div key={thought.id} className="flex flex-col gap-1.5 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "size-2 rounded-full",
-                    thought.nodeId === "top" ? "bg-blue-500" :
-                    thought.nodeId === "bottom-left" ? "bg-purple-500" : "bg-emerald-500"
-                  )} />
-                  <span className="font-semibold text-foreground">{thought.agent}</span>
-                  <span className="text-xs text-muted-foreground ml-auto">
-                    {thought.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                  </span>
+            <>
+              {thoughts.map((thought) => (
+                <div key={thought.id} className="flex flex-col gap-1.5 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "size-2 rounded-full",
+                      thought.nodeId === "top" ? "bg-blue-500" :
+                      thought.nodeId === "bottom-left" ? "bg-purple-500" : "bg-emerald-500"
+                    )} />
+                    <span className="font-semibold text-foreground">{thought.agent}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {thought.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
+                  </div>
+                  <div className="rounded-lg border border-border/50 bg-background/50 p-2.5 text-muted-foreground space-y-2 [&>p]:mb-0 [&_p:last-child]:mb-0 [&_code]:rounded [&_code]:bg-muted/50 [&_code]:px-1 [&_code]:py-0.5 [&_pre]:rounded-md [&_pre]:bg-muted/50 [&_pre]:p-2 break-words">
+                    <ReactMarkdown>
+                      {truncateMessage(thought.message, 40)}
+                    </ReactMarkdown>
+                  </div>
                 </div>
-                <div className="rounded-lg border border-border/50 bg-background/50 p-2.5 text-muted-foreground">
-                  {thought.message}
-                </div>
-              </div>
-            ))
+              ))}
+              <div ref={scrollRef} />
+            </>
           )}
         </div>
       </ScrollArea>

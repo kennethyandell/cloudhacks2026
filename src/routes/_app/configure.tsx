@@ -84,9 +84,9 @@ function ConfigureContent() {
         // Find latest preset
         const latest = items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
         setConfigs({
-          "top": { name: latest.name || "Subagent A", modelId: latest.melchior?.model || BEDROCK_MODELS[0].id, prompt: latest.melchior?.prompt || "" },
-          "bottom-left": { name: latest.name || "Subagent B", modelId: latest.balthasar?.model || BEDROCK_MODELS[0].id, prompt: latest.balthasar?.prompt || "" },
-          "bottom-right": { name: latest.name || "Subagent C", modelId: latest.casper?.model || BEDROCK_MODELS[0].id, prompt: latest.casper?.prompt || "" },
+          "top": { name: latest.melchior?.name || "Subagent A", modelId: latest.melchior?.model || BEDROCK_MODELS[0].id, prompt: latest.melchior?.prompt || "" },
+          "bottom-left": { name: latest.balthasar?.name || "Subagent B", modelId: latest.balthasar?.model || BEDROCK_MODELS[0].id, prompt: latest.balthasar?.prompt || "" },
+          "bottom-right": { name: latest.casper?.name || "Subagent C", modelId: latest.casper?.model || BEDROCK_MODELS[0].id, prompt: latest.casper?.prompt || "" },
         })
       }
     }).catch(err => console.error("Failed to load presets", err))
@@ -106,14 +106,17 @@ function ConfigureContent() {
           userId: "default-user",
           name: meta?.name || "Applied Preset",
           melchior: {
+            name: presetConfigs["top"].name,
             prompt: presetConfigs["top"].prompt,
             model: presetConfigs["top"].modelId,
           },
           balthasar: {
+            name: presetConfigs["bottom-left"].name,
             prompt: presetConfigs["bottom-left"].prompt,
             model: presetConfigs["bottom-left"].modelId,
           },
           casper: {
+            name: presetConfigs["bottom-right"].name,
             prompt: presetConfigs["bottom-right"].prompt,
             model: presetConfigs["bottom-right"].modelId,
           },

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { ChatLeftSidebar, ChatRightSidebar, type AgentThought } from '@/components/chat/chat-sidebars'
 import { ChatWindow, type Message } from '@/components/chat/chat-window'
@@ -17,6 +17,20 @@ function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const messagesRef = useRef<Message[]>([])
   const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0)
+  const agentNamesRef = useRef({ melchior: "Melchior", balthasar: "Balthasar", casper: "Casper" })
+
+  useEffect(() => {
+    api.presets.list("default-user").then((items: any[]) => {
+      if (items && items.length > 0) {
+        const latest = items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+        agentNamesRef.current = {
+          melchior: latest.melchior?.name || "Melchior",
+          balthasar: latest.balthasar?.name || "Balthasar",
+          casper: latest.casper?.name || "Casper",
+        }
+      }
+    }).catch(err => console.error("Failed to load preset for agent names", err))
+  }, [])
 
   const updateMessages = (newMessages: Message[]) => {
     setMessages(newMessages)
@@ -108,9 +122,9 @@ function ChatPage() {
         let nodeId: FlowNodeId = "top"
         let agentName = collaboratorName
 
-        if (collaboratorName === "collaborator-1")      { nodeId = "top";          agentName = "Melchior" }
-        else if (collaboratorName === "collaborator-2") { nodeId = "bottom-left";  agentName = "Balthasar" }
-        else if (collaboratorName === "collaborator-3") { nodeId = "bottom-right"; agentName = "Casper" }
+        if (collaboratorName === "collaborator-1")      { nodeId = "top";          agentName = agentNamesRef.current.melchior }
+        else if (collaboratorName === "collaborator-2") { nodeId = "bottom-left";  agentName = agentNamesRef.current.balthasar }
+        else if (collaboratorName === "collaborator-3") { nodeId = "bottom-right"; agentName = agentNamesRef.current.casper }
 
         setActiveNode(nodeId)
         setThoughts(prev => [...prev, {

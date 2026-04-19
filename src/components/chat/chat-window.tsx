@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react"
+import ReactMarkdown from "react-markdown"
 import { SendIcon, BotIcon, UserIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -125,12 +126,16 @@ export function ChatWindow({
                     "rounded-xl px-4 py-3 text-sm",
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground"
+                      : "bg-muted text-foreground space-y-3 [&_p:not(:last-child)]:mb-3 [&_code]:rounded [&_code]:bg-background/50 [&_code]:px-1.5 [&_code]:py-0.5 [&_pre]:rounded-lg [&_pre]:bg-background/50 [&_pre]:p-4 [&_pre_code]:bg-transparent [&_pre_code]:p-0 break-words [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mt-1 [&_strong]:font-semibold"
                   )}
                 >
-                  <p className="whitespace-pre-wrap">
-                    {msg.role === "supervisor" ? parseMessageContent(msg.content) : msg.content}
-                  </p>
+                  {msg.role === "supervisor" ? (
+                    <ReactMarkdown>
+                      {parseMessageContent(msg.content)}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  )}
                 </div>
               </div>
             ))
