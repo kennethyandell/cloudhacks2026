@@ -84,3 +84,14 @@ export function getDefaultSubagentConfig(): SubagentConfig {
     prompt: "",
   }
 }
+
+// Must match the backend's MIN_PROMPT_LENGTH in backend/lambda/crud-db/index.mjs.
+// AWS Bedrock's UpdateAgent rejects instructions shorter than this.
+export const MIN_PROMPT_LENGTH = 40
+
+export function isValidPrompt(prompt: string): boolean {
+  return prompt.trim().length >= MIN_PROMPT_LENGTH
+}
+
+export const DEFAULT_SUPERVISOR_PROMPT =
+  "You are the MAGI supervisor. Coordinate Melchior, Balthasar, and Casper to answer the user's request with a single synthesized response."

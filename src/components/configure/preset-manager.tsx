@@ -21,14 +21,24 @@ import {
 } from "@/components/ui/dialog"
 import { fetchPresets, createPreset, deletePreset, type Preset } from "@/api/presets"
 import type { FlowNodeId } from "./flow-canvas"
-import type { SubagentConfig } from "./models"
+import { MIN_PROMPT_LENGTH, isValidPrompt, type SubagentConfig } from "./models"
 
 type PresetManagerProps = {
   currentConfigs: Record<FlowNodeId, SubagentConfig>
-  onApplyPreset: (configs: Record<FlowNodeId, SubagentConfig>) => void
+  onApplyPreset: (
+    configs: Record<FlowNodeId, SubagentConfig>,
+    meta?: { name: string }
+  ) => void | Promise<void>
+  isApplying?: boolean
 }
 
-export function PresetManager({ currentConfigs, onApplyPreset }: PresetManagerProps) {
+const NODE_LABELS: Record<FlowNodeId, string> = {
+  "top": "Subagent A",
+  "bottom-left": "Subagent B",
+  "bottom-right": "Subagent C",
+}
+
+export function PresetManager({ currentConfigs, onApplyPreset, isApplying = false }: PresetManagerProps) {
   const [presets, setPresets] = useState<Preset[]>([])
   const [selectedPresetId, setSelectedPresetId] = useState<string>("")
   const [isLoading, setIsLoading] = useState(true)
@@ -36,6 +46,7 @@ export function PresetManager({ currentConfigs, onApplyPreset }: PresetManagerPr
   const [isDeleting, setIsDeleting] = useState(false)
   const [newPresetName, setNewPresetName] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [applyError, setApplyError] = useState<string | null>(null)
 
   useEffect(() => {
     loadPresets()
@@ -86,11 +97,24 @@ export function PresetManager({ currentConfigs, onApplyPreset }: PresetManagerPr
     }
   }
 
-  function handleApply() {
+  async function handleApply() {
     const preset = presets.find(p => p.id === selectedPresetId)
-    if (preset) {
-      onApplyPreset(preset.configs)
+    if (!preset) return
+
+    const invalid = (Object.keys(preset.configs) as FlowNodeId[]).filter(
+      (nodeId) => !isValidPrompt(preset.configs[nodeId].prompt)
+    )
+
+    if (invalid.length > 0) {
+      const names = invalid.map((nodeId) => NODE_LABELS[nodeId]).join(", ")
+      setApplyError(
+        `Prompts for ${names} must be at least ${MIN_PROMPT_LENGTH} characters before applying.`
+      )
+      return
     }
+
+    setApplyError(null)
+    await onApplyPreset(preset.configs, { name: preset.name })
   }
 
   if (isLoading) {
@@ -165,22 +189,30 @@ export function PresetManager({ currentConfigs, onApplyPreset }: PresetManagerPr
       <div className="flex gap-2">
         <Button 
           className="flex-1" 
-          disabled={!selectedPresetId || selectedPresetId === "none"} 
+          disabled={!selectedPresetId || selectedPresetId === "none" || isApplying} 
           onClick={handleApply}
         >
-          <DownloadIcon className="mr-2 size-4" />
-          Apply Preset
+          {isApplying ? (
+            <Loader2Icon className="mr-2 size-4 animate-spin" />
+          ) : (
+            <DownloadIcon className="mr-2 size-4" />
+          )}
+          {isApplying ? "Applying..." : "Apply Preset"}
         </Button>
         <Button 
           variant="destructive" 
           size="icon"
-          disabled={!selectedPresetId || selectedPresetId === "none" || isDeleting}
+          disabled={!selectedPresetId || selectedPresetId === "none" || isDeleting || isApplying}
           onClick={handleDeletePreset}
           title="Delete selected preset"
         >
           {isDeleting ? <Loader2Icon className="size-4 animate-spin" /> : <TrashIcon className="size-4" />}
         </Button>
       </div>
+
+      {applyError && (
+        <p className="text-sm text-destructive">{applyError}</p>
+      )}
       
       {!selectedPresetId && (
         <div className="rounded-lg border border-border/50 bg-muted/20 p-4 mt-4">
